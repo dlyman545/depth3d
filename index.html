@@ -3,1169 +3,1019 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DEPTH — Image to 3D Converter</title>
+<title>DEPTH3D — Image to 3D Converter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --panel: #16161f;
-    --border: rgba(255,255,255,0.07);
-    --accent: #00e5ff;
-    --accent2: #7c3aed;
-    --accent3: #f59e0b;
-    --text: #e8e8f0;
-    --muted: #6b6b85;
-    --danger: #ef4444;
-    --success: #10b981;
-    --glow: rgba(0,229,255,0.15);
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Grid noise background */
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0;
-    background-image:
-      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-  }
-
-  /* Glowing orbs */
-  body::after {
-    content: '';
-    position: fixed;
-    top: -20%;
-    right: -10%;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .orb-bottom {
-    position: fixed;
-    bottom: -20%;
-    left: -10%;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .wrapper {
-    position: relative; z-index: 1;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  /* ── Header ── */
-  header {
-    padding: 32px 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .logo-mark {
-    width: 40px; height: 40px;
-    border: 2px solid var(--accent);
-    border-radius: 8px;
-    display: grid;
-    place-items: center;
-    box-shadow: 0 0 20px var(--glow);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .logo-mark::before {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(to top, rgba(0,229,255,0.3), transparent);
-  }
-
-  .logo-mark svg { position: relative; z-index: 1; }
-
-  .logo-text {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: #fff;
-  }
-
-  .logo-text span { color: var(--accent); }
-
-  .badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-
-  /* ── Hero ── */
-  .hero {
-    padding: 60px 0 40px;
-    text-align: center;
-  }
-
-  .hero-eyebrow {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.1s forwards;
-  }
-
-  .hero h1 {
-    font-size: clamp(40px, 7vw, 72px);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin-bottom: 20px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.2s forwards;
-  }
-
-  .hero h1 .line2 {
-    display: block;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .hero p {
-    font-size: 17px;
-    color: var(--muted);
-    max-width: 480px;
-    margin: 0 auto;
-    line-height: 1.65;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.3s forwards;
-  }
-
-  /* ── Main Card ── */
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    overflow: hidden;
-    margin-bottom: 40px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.4s forwards;
-  }
-
-  .card-header {
-    padding: 20px 28px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot-red { background: #ef4444; }
-  .dot-yellow { background: #f59e0b; }
-  .dot-green { background: #10b981; }
-
-  /* ── Drop Zone ── */
-  .drop-zone {
-    margin: 28px;
-    border: 2px dashed rgba(0,229,255,0.2);
-    border-radius: 16px;
-    padding: 60px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    background: rgba(0,229,255,0.02);
-  }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: rgba(0,229,255,0.05);
-    box-shadow: inset 0 0 40px rgba(0,229,255,0.04);
-  }
-
-  .drop-icon {
-    width: 64px; height: 64px;
-    margin: 0 auto 20px;
-    background: rgba(0,229,255,0.1);
-    border-radius: 16px;
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(0,229,255,0.2);
-  }
-
-  .drop-zone h3 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .drop-zone p {
-    color: var(--muted);
-    font-size: 14px;
-  }
-
-  .drop-zone .browse {
-    color: var(--accent);
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
-  #file-input { display: none; }
-
-  /* Preview */
-  .preview-wrap {
-    display: none;
-    margin: 0 28px 0;
-    border-radius: 16px;
-    overflow: hidden;
-    position: relative;
-    border: 1px solid var(--border);
-  }
-
-  .preview-wrap img {
-    width: 100%;
-    max-height: 320px;
-    object-fit: contain;
-    background: #0d0d14;
-    display: block;
-  }
-
-  .preview-badge {
-    position: absolute;
-    top: 12px; left: 12px;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    padding: 5px 12px;
-    border-radius: 100px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-  }
-
-  .preview-clear {
-    position: absolute;
-    top: 12px; right: 12px;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--muted);
-  }
-
-  .preview-clear:hover { background: rgba(239,68,68,0.2); color: var(--danger); border-color: var(--danger); }
-
-  /* ── Options Grid ── */
-  .options-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 24px 28px;
-  }
-
-  .option-group label {
-    display: block;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  /* Format selector */
-  .format-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-  }
-
-  .fmt-btn {
-    padding: 10px 6px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-
-  .fmt-btn:hover { border-color: rgba(0,229,255,0.3); color: var(--text); }
-
-  .fmt-btn.active {
-    border-color: var(--accent);
-    background: rgba(0,229,255,0.1);
-    color: var(--accent);
-    box-shadow: 0 0 12px rgba(0,229,255,0.1);
-  }
-
-  .fmt-desc {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 8px;
-    min-height: 16px;
-    font-family: 'Space Mono', monospace;
-  }
-
-  /* Quality selector */
-  .quality-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-
-  .quality-btn {
-    padding: 12px 8px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-
-  .quality-btn .q-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    display: block;
-    margin-bottom: 4px;
-    transition: color 0.2s;
-  }
-
-  .quality-btn .q-sub {
-    font-size: 10px;
-    color: rgba(107,107,133,0.6);
-    font-family: 'Space Mono', monospace;
-  }
-
-  .quality-btn:hover { border-color: rgba(0,229,255,0.3); }
-  .quality-btn.active { border-color: var(--accent); background: rgba(0,229,255,0.08); }
-  .quality-btn.active .q-label { color: var(--accent); }
-
-  /* Depth scale slider */
-  .depth-wrap {
-    grid-column: 1 / -1;
-  }
-
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    flex: 1;
-    height: 4px;
-    background: var(--surface);
-    border-radius: 2px;
-    outline: none;
-    border: 1px solid var(--border);
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: var(--accent);
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,229,255,0.4);
-  }
-
-  .slider-val {
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    color: var(--accent);
-    min-width: 36px;
-    text-align: right;
-  }
-
-  /* ── Convert Button ── */
-  .btn-row {
-    padding: 0 28px 28px;
-  }
-
-  .convert-btn {
-    width: 100%;
-    padding: 18px;
-    border: none;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
-    color: #000;
-    font-family: 'Syne', sans-serif;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    text-transform: uppercase;
-  }
-
-  .convert-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .convert-btn:hover::before { opacity: 1; }
-  .convert-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,229,255,0.3); }
-  .convert-btn:active { transform: translateY(0); }
-  .convert-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-
-  /* ── Progress ── */
-  .progress-wrap {
-    display: none;
-    padding: 0 28px 28px;
-  }
-
-  .progress-bar-bg {
-    height: 4px;
-    background: var(--surface);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 10px;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    border-radius: 2px;
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-
-  .progress-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .progress-step { color: var(--accent); }
-
-  /* ── Result Panel ── */
-  .result-panel {
-    display: none;
-    margin: 28px;
-    margin-top: 0;
-    padding: 20px;
-    background: rgba(16,185,129,0.07);
-    border: 1px solid rgba(16,185,129,0.25);
-    border-radius: 14px;
-  }
-
-  .result-panel .result-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .result-panel .result-title {
-    font-weight: 700;
-    font-size: 16px;
-    color: var(--success);
-  }
-
-  .result-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .stat-box {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    text-align: center;
-  }
-
-  .stat-box .val {
-    font-family: 'Space Mono', monospace;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    display: block;
-  }
-
-  .stat-box .lbl {
-    font-size: 11px;
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    letter-spacing: 0.05em;
-  }
-
-  .download-btn {
-    width: 100%;
-    padding: 14px;
-    border: 2px solid var(--success);
-    border-radius: 10px;
-    background: rgba(16,185,129,0.1);
-    color: var(--success);
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .download-btn:hover {
-    background: rgba(16,185,129,0.2);
-    box-shadow: 0 4px 20px rgba(16,185,129,0.2);
-  }
-
-  /* ── Error ── */
-  .error-panel {
-    display: none;
-    margin: 0 28px 28px;
-    padding: 16px 20px;
-    background: rgba(239,68,68,0.07);
-    border: 1px solid rgba(239,68,68,0.25);
-    border-radius: 12px;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--danger);
-  }
-
-  /* ── Info Section ── */
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 60px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.6s forwards;
-  }
-
-  .info-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .info-card .icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    margin-bottom: 14px;
-    font-size: 20px;
-  }
-
-  .info-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-  .info-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
-
-  /* Formats table */
-  .formats-section {
-    margin-bottom: 60px;
-    opacity: 0;
-    animation: fadeUp 0.6s ease 0.7s forwards;
-  }
-
-  .section-title {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-
-  .fmt-table {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .fmt-row {
-    display: grid;
-    grid-template-columns: 80px 1fr 1fr 1fr;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    align-items: center;
-  }
-
-  .fmt-row:last-child { border-bottom: none; }
-
-  .fmt-row.header {
-    background: var(--surface);
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .fmt-name {
-    font-family: 'Space Mono', monospace;
-    font-weight: 700;
-    color: var(--accent);
-    font-size: 12px;
-  }
-
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.03em;
-  }
-
-  .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
-  .tag-blue { background: rgba(0,229,255,0.12); color: var(--accent); }
-  .tag-orange { background: rgba(245,158,11,0.15); color: var(--accent3); }
-  .tag-purple { background: rgba(124,58,237,0.15); color: #a78bfa; }
-
-  /* Footer */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 24px 0;
-    text-align: center;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-
-  /* Animations */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .spinner {
-    display: inline-block;
-    width: 16px; height: 16px;
-    border: 2px solid rgba(0,0,0,0.3);
-    border-top-color: #000;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 8px;
-  }
-
-  /* Server status */
-  .server-note {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    padding: 0 28px 16px;
-    line-height: 1.6;
-  }
-
-  .server-note code {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 4px;
-    color: var(--accent);
-    font-size: 11px;
-  }
-
-  @media (max-width: 640px) {
-    .options-grid { grid-template-columns: 1fr; }
-    .format-grid { grid-template-columns: repeat(3, 1fr); }
-    .info-grid { grid-template-columns: 1fr; }
-    .result-stats { grid-template-columns: repeat(3, 1fr); }
-    .fmt-table { display: none; }
-    .hero h1 { font-size: 36px; }
-  }
+:root {
+  --bg:#0a0a0f; --surface:#111118; --panel:#16161f; --border:rgba(255,255,255,0.07);
+  --accent:#00e5ff; --accent2:#7c3aed; --accent3:#f59e0b;
+  --text:#e8e8f0; --muted:#6b6b85; --danger:#ef4444; --success:#10b981;
+  --glow:rgba(0,229,255,0.15);
+  --js:#f7df1e; --py:#3b82f6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,229,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.02) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none}
+body::after{content:'';position:fixed;top:-20%;right:-10%;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(124,58,237,0.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+.orb{position:fixed;bottom:-20%;left:-10%;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(0,229,255,0.08) 0%,transparent 70%);pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* Header */
+header{padding:32px 0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-mark{width:40px;height:40px;border:2px solid var(--accent);border-radius:8px;display:grid;place-items:center;
+  box-shadow:0 0 20px var(--glow);position:relative;overflow:hidden}
+.logo-mark::before{content:'';position:absolute;bottom:0;left:0;right:0;height:50%;
+  background:linear-gradient(to top,rgba(0,229,255,0.3),transparent)}
+.logo-mark svg{position:relative;z-index:1}
+.logo-text{font-size:22px;font-weight:800;letter-spacing:0.12em;color:#fff}
+.logo-text span{color:var(--accent)}
+.badge{font-family:'Space Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid var(--border);
+  border-radius:100px;color:var(--muted);letter-spacing:0.05em}
+
+/* Hero */
+.hero{padding:60px 0 40px;text-align:center}
+.eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:0.2em;
+  text-transform:uppercase;margin-bottom:20px;opacity:0;animation:fadeUp 0.6s ease 0.1s forwards}
+.hero h1{font-size:clamp(38px,6vw,68px);font-weight:800;line-height:1.05;letter-spacing:-0.02em;
+  margin-bottom:20px;opacity:0;animation:fadeUp 0.6s ease 0.2s forwards}
+.hero h1 .grad{display:block;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:var(--muted);max-width:500px;margin:0 auto;line-height:1.65;
+  opacity:0;animation:fadeUp 0.6s ease 0.3s forwards}
+
+/* ── ENGINE TOGGLE ── */
+.engine-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin:32px auto 0;width:fit-content;
+  opacity:0;animation:fadeUp 0.6s ease 0.35s forwards}
+.eng-btn{padding:14px 32px;background:transparent;border:none;cursor:pointer;
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:0.04em;color:var(--muted);transition:all 0.25s;position:relative;
+  display:flex;align-items:center;gap:10px}
+.eng-btn:first-child{border-right:1px solid var(--border)}
+.eng-btn .eng-icon{font-size:18px}
+.eng-btn .eng-sub{font-family:'Space Mono',monospace;font-size:10px;
+  font-weight:400;color:var(--muted);display:block;margin-top:2px;letter-spacing:0.05em}
+.eng-btn.active-js{background:rgba(247,223,30,0.1);color:var(--js)}
+.eng-btn.active-js .eng-sub{color:rgba(247,223,30,0.6)}
+.eng-btn.active-py{background:rgba(59,130,246,0.1);color:var(--py)}
+.eng-btn.active-py .eng-sub{color:rgba(59,130,246,0.6)}
+.eng-badge{position:absolute;top:6px;right:6px;font-family:'Space Mono',monospace;
+  font-size:8px;padding:2px 5px;border-radius:4px;letter-spacing:0.05em;font-weight:700}
+.eng-badge.instant{background:rgba(16,185,129,0.2);color:var(--success)}
+.eng-badge.server{background:rgba(59,130,246,0.2);color:var(--py)}
+
+/* Python URL bar */
+.py-url-bar{display:none;margin:16px auto 0;max-width:480px;
+  opacity:0;animation:fadeUp 0.4s ease forwards}
+.py-url-bar.show{display:block}
+.url-input-wrap{display:flex;gap:8px;align-items:center}
+.url-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);
+  white-space:nowrap;letter-spacing:0.06em;text-transform:uppercase}
+.url-input{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:8px;
+  padding:8px 14px;font-family:'Space Mono',monospace;font-size:12px;color:var(--text);outline:none;
+  transition:border-color 0.2s}
+.url-input:focus{border-color:var(--py)}
+.url-input::placeholder{color:var(--muted)}
+.url-status{font-family:'Space Mono',monospace;font-size:10px;margin-top:6px;padding-left:2px}
+.url-status.ok{color:var(--success)}
+.url-status.err{color:var(--danger)}
+.url-status.checking{color:var(--muted)}
+
+/* Card */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:20px;
+  overflow:hidden;margin-bottom:40px;opacity:0;animation:fadeUp 0.6s ease 0.4s forwards}
+.card-header{padding:16px 28px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;
+  font-size:12px;color:var(--muted);letter-spacing:0.05em}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot-r{background:#ef4444}.dot-y{background:#f59e0b}.dot-g{background:#10b981}
+.engine-label{margin-left:auto;font-size:10px;padding:3px 10px;border-radius:100px;
+  border:1px solid;font-weight:700;letter-spacing:0.08em}
+.engine-label.js{border-color:rgba(247,223,30,0.3);color:var(--js);background:rgba(247,223,30,0.06)}
+.engine-label.py{border-color:rgba(59,130,246,0.3);color:var(--py);background:rgba(59,130,246,0.06)}
+
+/* Drop zone */
+.drop-zone{margin:28px;border:2px dashed rgba(0,229,255,0.2);border-radius:16px;
+  padding:60px 24px;text-align:center;cursor:pointer;transition:all 0.3s;
+  background:rgba(0,229,255,0.02)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,229,255,0.05)}
+.drop-icon{width:64px;height:64px;margin:0 auto 20px;background:rgba(0,229,255,0.1);
+  border-radius:16px;display:grid;place-items:center;border:1px solid rgba(0,229,255,0.2)}
+.drop-zone h3{font-size:20px;font-weight:600;margin-bottom:8px}
+.drop-zone p{color:var(--muted);font-size:14px}
+.browse{color:var(--accent);text-decoration:underline;cursor:pointer}
+#file-input{display:none}
+
+/* Preview */
+.preview-wrap{display:none;margin:0 28px 0;border-radius:16px;overflow:hidden;
+  position:relative;border:1px solid var(--border)}
+.preview-wrap img{width:100%;max-height:300px;object-fit:contain;background:#0d0d14;display:block}
+.preview-badge{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);border:1px solid var(--border);padding:5px 12px;
+  border-radius:100px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent)}
+.preview-clear{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);border:1px solid var(--border);width:32px;height:32px;
+  border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:all 0.2s;color:var(--muted)}
+.preview-clear:hover{background:rgba(239,68,68,0.2);color:var(--danger);border-color:var(--danger)}
+
+/* Options */
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px 28px}
+.option-group label{display:block;font-family:'Space Mono',monospace;font-size:11px;
+  letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.format-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.fmt-btn{padding:10px 6px;border:1px solid var(--border);border-radius:10px;background:var(--surface);
+  color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;text-align:center}
+.fmt-btn:hover{border-color:rgba(0,229,255,0.3);color:var(--text)}
+.fmt-btn.active{border-color:var(--accent);background:rgba(0,229,255,0.1);
+  color:var(--accent);box-shadow:0 0 12px rgba(0,229,255,0.1)}
+.fmt-desc{font-size:11px;color:var(--muted);margin-top:8px;min-height:16px;font-family:'Space Mono',monospace}
+.quality-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.quality-btn{padding:12px 8px;border:1px solid var(--border);border-radius:10px;
+  background:var(--surface);cursor:pointer;transition:all 0.2s;text-align:center}
+.quality-btn .q-label{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+  color:var(--muted);letter-spacing:0.05em;display:block;margin-bottom:4px;transition:color 0.2s}
+.quality-btn .q-sub{font-size:10px;color:rgba(107,107,133,0.6);font-family:'Space Mono',monospace}
+.quality-btn:hover{border-color:rgba(0,229,255,0.3)}
+.quality-btn.active{border-color:var(--accent);background:rgba(0,229,255,0.08)}
+.quality-btn.active .q-label{color:var(--accent)}
+.slider-row{display:flex;align-items:center;gap:16px}
+input[type=range]{-webkit-appearance:none;flex:1;height:4px;background:var(--surface);
+  border-radius:2px;outline:none;border:1px solid var(--border)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 10px rgba(0,229,255,0.4)}
+.slider-val{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);min-width:36px;text-align:right}
+
+/* Convert button */
+.btn-row{padding:0 28px 28px}
+.convert-btn{width:100%;padding:18px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--accent) 0%,#0099cc 100%);
+  color:#000;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  letter-spacing:0.05em;cursor:pointer;transition:all 0.3s;position:relative;
+  overflow:hidden;text-transform:uppercase}
+.convert-btn::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);opacity:0;transition:opacity 0.3s}
+.convert-btn:hover::before{opacity:1}
+.convert-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(0,229,255,0.3)}
+.convert-btn:active{transform:translateY(0)}
+.convert-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Progress */
+.progress-wrap{display:none;padding:0 28px 28px}
+.progress-bar-bg{height:4px;background:var(--surface);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));
+  border-radius:2px;width:0%;transition:width 0.4s ease}
+.progress-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);
+  display:flex;justify-content:space-between}
+
+/* Result */
+.result-panel{display:none;margin:28px;margin-top:0;padding:20px;
+  background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.25);border-radius:14px}
+.result-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.result-title{font-weight:700;font-size:16px;color:var(--success)}
+.result-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-box .val{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--text);display:block}
+.stat-box .lbl{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:0.05em}
+.download-btn{width:100%;padding:14px;border:2px solid var(--success);border-radius:10px;
+  background:rgba(16,185,129,0.1);color:var(--success);font-family:'Syne',sans-serif;
+  font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em;text-transform:uppercase}
+.download-btn:hover{background:rgba(16,185,129,0.2);box-shadow:0 4px 20px rgba(16,185,129,0.2)}
+
+/* Error */
+.error-panel{display:none;margin:0 28px 28px;padding:16px 20px;
+  background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.25);
+  border-radius:12px;font-family:'Space Mono',monospace;font-size:12px;color:var(--danger);
+  white-space:pre-wrap;line-height:1.6}
+
+/* Info + formats */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px;
+  opacity:0;animation:fadeUp 0.6s ease 0.6s forwards}
+.info-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px}
+.info-card .icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px;font-size:20px}
+.info-card h4{font-size:15px;font-weight:700;margin-bottom:8px}
+.info-card p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* Deploy steps */
+.deploy-section{margin-bottom:48px;opacity:0;animation:fadeUp 0.6s ease 0.65s forwards}
+.section-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);
+  letter-spacing:0.15em;text-transform:uppercase;margin-bottom:16px}
+.deploy-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.deploy-steps{counter-reset:step}
+.deploy-step{display:flex;gap:20px;padding:20px 24px;border-bottom:1px solid var(--border);counter-increment:step}
+.deploy-step:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.15);
+  border:1px solid rgba(59,130,246,0.3);display:grid;place-items:center;
+  font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--py);flex-shrink:0;margin-top:2px}
+.step-body h4{font-size:14px;font-weight:700;margin-bottom:6px}
+.step-body p{font-size:13px;color:var(--muted);line-height:1.6}
+.step-body code{background:var(--surface);border:1px solid var(--border);padding:2px 8px;
+  border-radius:4px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent)}
+.step-body pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:12px 16px;margin-top:8px;font-family:'Space Mono',monospace;font-size:12px;
+  color:var(--accent);line-height:1.7;overflow-x:auto}
+
+footer{border-top:1px solid var(--border);padding:24px 0;text-align:center;
+  font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:20px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,0.3);
+  border-top-color:#000;border-radius:50%;animation:spin 0.8s linear infinite;
+  vertical-align:middle;margin-right:8px}
+
+@media(max-width:640px){
+  .options-grid{grid-template-columns:1fr}
+  .format-grid{grid-template-columns:repeat(3,1fr)}
+  .info-grid{grid-template-columns:1fr}
+  .result-stats{grid-template-columns:repeat(2,1fr)}
+  .eng-btn{padding:12px 20px}
+}
 </style>
 </head>
 <body>
-<div class="orb-bottom"></div>
+<div class="orb"></div>
+<div class="wrap">
 
-<div class="wrapper">
-  <!-- Header -->
-  <header>
-    <div class="logo">
-      <div class="logo-mark">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2 L18 16 L2 16 Z" stroke="#00e5ff" stroke-width="1.5" fill="rgba(0,229,255,0.15)"/>
-          <path d="M10 7 L15 16 L5 16 Z" fill="rgba(0,229,255,0.3)"/>
-        </svg>
-      </div>
-      <span class="logo-text">DEPTH<span>3D</span></span>
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 2L18 16L2 16Z" stroke="#00e5ff" stroke-width="1.5" fill="rgba(0,229,255,0.15)"/>
+        <path d="M10 7L15 16L5 16Z" fill="rgba(0,229,255,0.3)"/>
+      </svg>
     </div>
-    <span class="badge">v1.0 · LOCAL</span>
-  </header>
+    <span class="logo-text">DEPTH<span>3D</span></span>
+  </div>
+  <span class="badge">v2.0 · JS + Python</span>
+</header>
 
-  <!-- Hero -->
-  <section class="hero">
-    <p class="hero-eyebrow">▸ AI-Powered Depth Estimation</p>
-    <h1>
-      Turn any image into
-      <span class="line2">a 3D model</span>
-    </h1>
-    <p>Upload a photo. Our depth-estimation engine reconstructs geometry and exports production-ready 3D assets in multiple formats.</p>
-  </section>
+<!-- Hero -->
+<section class="hero">
+  <p class="eyebrow">▸ Dual-Engine Depth Estimation</p>
+  <h1>Turn any image into<span class="grad">a 3D model</span></h1>
+  <p>Choose your engine — run instantly in the browser with JavaScript, or send to a Python server for higher-fidelity processing.</p>
 
-  <!-- Main Card -->
-  <div class="card">
-    <div class="card-header">
-      <span class="dot dot-red"></span>
-      <span class="dot dot-yellow"></span>
-      <span class="dot dot-green"></span>
-      &nbsp;&nbsp;converter.py — running on localhost:5000
+  <!-- Engine Toggle -->
+  <div class="engine-toggle">
+    <button class="eng-btn active-js" id="btn-js" onclick="setEngine('js')">
+      <span class="eng-icon">⚡</span>
+      <span>
+        JavaScript
+        <span class="eng-sub">Runs in browser · No setup</span>
+      </span>
+      <span class="eng-badge instant">INSTANT</span>
+    </button>
+    <button class="eng-btn" id="btn-py" onclick="setEngine('py')">
+      <span class="eng-icon">🐍</span>
+      <span>
+        Python
+        <span class="eng-sub">Server-side · scipy depth</span>
+      </span>
+      <span class="eng-badge server">SERVER</span>
+    </button>
+  </div>
+
+  <!-- Python URL bar -->
+  <div class="py-url-bar" id="py-url-bar">
+    <div class="url-input-wrap">
+      <span class="url-label">API URL</span>
+      <input class="url-input" id="api-url" type="text"
+        placeholder="https://your-app.up.railway.app"
+        value="">
     </div>
+    <div class="url-status checking" id="url-status">Enter your Railway URL above</div>
+  </div>
+</section>
 
-    <!-- Drop Zone -->
-    <div class="drop-zone" id="drop-zone">
-      <input type="file" id="file-input" accept="image/*">
-      <div class="drop-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-        </svg>
-      </div>
-      <h3>Drop your image here</h3>
-      <p>PNG, JPG, WEBP, GIF · Up to 32MB · or <span class="browse" id="browse-btn">browse files</span></p>
+<!-- Main Card -->
+<div class="card">
+  <div class="card-header">
+    <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+    &nbsp;&nbsp;<span id="header-label">converter.js — browser engine</span>
+    <span class="engine-label js" id="engine-label">JS</span>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*">
+    <div class="drop-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
     </div>
+    <h3>Drop your image here</h3>
+    <p>PNG, JPG, WEBP · Up to 32MB · or <span class="browse" id="browse-btn">browse files</span></p>
+  </div>
 
-    <!-- Preview -->
-    <div class="preview-wrap" id="preview-wrap">
-      <img id="preview-img" src="" alt="Preview">
-      <span class="preview-badge" id="preview-badge">IMAGE</span>
-      <button class="preview-clear" id="clear-btn" title="Clear">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 1l12 12M13 1L1 13"/>
-        </svg>
-      </button>
+  <!-- Preview -->
+  <div class="preview-wrap" id="preview-wrap">
+    <img id="preview-img" src="" alt="Preview">
+    <span class="preview-badge" id="preview-badge">IMG</span>
+    <button class="preview-clear" id="clear-btn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 1l12 12M13 1L1 13"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Options -->
+  <div class="options-grid">
+    <div class="option-group" style="grid-column:1/-1">
+      <label>Export Format</label>
+      <div class="format-grid" id="format-grid">
+        <button class="fmt-btn active" data-fmt="ply">PLY</button>
+        <button class="fmt-btn" data-fmt="obj">OBJ</button>
+        <button class="fmt-btn" data-fmt="stl">STL</button>
+        <button class="fmt-btn" data-fmt="gltf">glTF</button>
+        <button class="fmt-btn" data-fmt="xyz">XYZ</button>
+      </div>
+      <div class="fmt-desc" id="fmt-desc">Binary PLY — color mesh, wide software support</div>
     </div>
-
-    <!-- Options -->
-    <div class="options-grid">
-      <!-- Format -->
-      <div class="option-group" style="grid-column: 1 / -1">
-        <label>Export Format</label>
-        <div class="format-grid" id="format-grid">
-          <button class="fmt-btn active" data-fmt="ply">PLY</button>
-          <button class="fmt-btn" data-fmt="obj">OBJ</button>
-          <button class="fmt-btn" data-fmt="stl">STL</button>
-          <button class="fmt-btn" data-fmt="gltf">glTF</button>
-          <button class="fmt-btn" data-fmt="xyz">XYZ</button>
-        </div>
-        <div class="fmt-desc" id="fmt-desc">Binary PLY — color mesh, wide software support, compact</div>
-      </div>
-
-      <!-- Quality -->
-      <div class="option-group">
-        <label>Mesh Quality</label>
-        <div class="quality-grid" id="quality-grid">
-          <button class="quality-btn" data-q="low">
-            <span class="q-label">LOW</span>
-            <span class="q-sub">Fast</span>
-          </button>
-          <button class="quality-btn active" data-q="medium">
-            <span class="q-label">MED</span>
-            <span class="q-sub">Balanced</span>
-          </button>
-          <button class="quality-btn" data-q="high">
-            <span class="q-label">HIGH</span>
-            <span class="q-sub">Dense</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Depth Scale -->
-      <div class="option-group">
-        <label>Depth Extrusion</label>
-        <div class="slider-row">
-          <input type="range" id="depth-slider" min="0.1" max="1.0" step="0.05" value="0.4">
-          <span class="slider-val" id="slider-val">0.40</span>
-        </div>
-        <div class="fmt-desc" style="margin-top: 6px;">Controls how tall the 3D relief appears</div>
-      </div>
-    </div>
-
-    <!-- Convert Button -->
-    <div class="btn-row">
-      <button class="convert-btn" id="convert-btn" disabled>
-        Select an image to convert
-      </button>
-    </div>
-
-    <!-- Progress -->
-    <div class="progress-wrap" id="progress-wrap">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progress-fill"></div>
-      </div>
-      <div class="progress-label">
-        <span id="progress-step">Initializing...</span>
-        <span id="progress-pct">0%</span>
+    <div class="option-group">
+      <label>Mesh Quality</label>
+      <div class="quality-grid">
+        <button class="quality-btn" data-q="low"><span class="q-label">LOW</span><span class="q-sub">Fast</span></button>
+        <button class="quality-btn active" data-q="medium"><span class="q-label">MED</span><span class="q-sub">Balanced</span></button>
+        <button class="quality-btn" data-q="high"><span class="q-label">HIGH</span><span class="q-sub">Dense</span></button>
       </div>
     </div>
-
-    <!-- Error -->
-    <div class="error-panel" id="error-panel"></div>
-
-    <!-- Result -->
-    <div class="result-panel" id="result-panel">
-      <div class="result-header">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="#10b981"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-        <span class="result-title">3D Asset Ready</span>
+    <div class="option-group">
+      <label>Depth Extrusion</label>
+      <div class="slider-row">
+        <input type="range" id="depth-slider" min="0.1" max="1.0" step="0.05" value="0.4">
+        <span class="slider-val" id="slider-val">0.40</span>
       </div>
-      <div class="result-stats" id="result-stats"></div>
-      <button class="download-btn" id="download-btn">⬇ Download 3D File</button>
-    </div>
-
-    <!-- Server note -->
-    <div class="server-note" id="server-note">
-      Run the backend: <code>python3 app.py</code> — connects to <code>localhost:5000</code>
+      <div class="fmt-desc" style="margin-top:6px">Controls Z-height of the relief</div>
     </div>
   </div>
 
-  <!-- Info Cards -->
-  <div class="info-grid">
-    <div class="info-card">
-      <div class="icon" style="background: rgba(0,229,255,0.1);">🔭</div>
-      <h4>Depth Estimation</h4>
-      <p>Heuristic depth analysis uses luminance, edge detection, and perspective cues to reconstruct geometry from a single image.</p>
-    </div>
-    <div class="info-card">
-      <div class="icon" style="background: rgba(124,58,237,0.1);">🧩</div>
-      <h4>Mesh Generation</h4>
-      <p>A dense triangulated mesh is built from the depth map, preserving the original image colors as per-vertex color data.</p>
-    </div>
-    <div class="info-card">
-      <div class="icon" style="background: rgba(245,158,11,0.1);">📦</div>
-      <h4>Multi-Format Export</h4>
-      <p>Export to PLY, OBJ, STL, glTF 2.0, or XYZ point cloud. Each format targets different 3D workflows and applications.</p>
-    </div>
+  <div class="btn-row">
+    <button class="convert-btn" id="convert-btn" disabled>Select an image to convert</button>
   </div>
 
-  <!-- Formats Table -->
-  <div class="formats-section">
-    <div class="section-title">▸ Format Comparison</div>
-    <div class="fmt-table">
-      <div class="fmt-row header">
-        <span>Format</span>
-        <span>Best For</span>
-        <span>Color Support</span>
-        <span>Compatible With</span>
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    <div class="progress-label"><span id="progress-step">Initializing...</span><span id="progress-pct">0%</span></div>
+  </div>
+
+  <div class="error-panel" id="error-panel"></div>
+
+  <div class="result-panel" id="result-panel">
+    <div class="result-header">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="#10b981"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+      <span class="result-title">3D Asset Ready</span>
+    </div>
+    <div class="result-stats" id="result-stats"></div>
+    <button class="download-btn" id="download-btn">⬇ Download 3D File</button>
+  </div>
+</div>
+
+<!-- Info cards -->
+<div class="info-grid">
+  <div class="info-card">
+    <div class="icon" style="background:rgba(247,223,30,0.1)">⚡</div>
+    <h4>JS Engine</h4>
+    <p>Runs entirely in your browser using Canvas and TypedArrays. Zero install, zero latency. Great for quick previews and sharing.</p>
+  </div>
+  <div class="info-card">
+    <div class="icon" style="background:rgba(59,130,246,0.1)">🐍</div>
+    <h4>Python Engine</h4>
+    <p>Sends the image to a Flask + SciPy server for Gaussian-filtered depth estimation and higher-quality mesh output.</p>
+  </div>
+  <div class="info-card">
+    <div class="icon" style="background:rgba(245,158,11,0.1)">📦</div>
+    <h4>5 Export Formats</h4>
+    <p>PLY, OBJ, STL, glTF 2.0, and XYZ point cloud — covering 3D printing, game engines, web, and analysis tools.</p>
+  </div>
+</div>
+
+<!-- Deploy steps -->
+<div class="deploy-section">
+  <div class="section-title">▸ Deploy Python Backend to Railway</div>
+  <div class="deploy-card">
+    <div class="deploy-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Create a GitHub repo</h4>
+        <p>Push <code>app.py</code>, <code>requirements.txt</code>, <code>Procfile</code>, and <code>railway.toml</code> to a new GitHub repository.</p>
+        <pre>git init
+git add app.py requirements.txt Procfile railway.toml
+git commit -m "init"
+git remote add origin https://github.com/YOU/depth3d-api.git
+git push -u origin main</pre>
       </div>
-      <div class="fmt-row">
-        <span class="fmt-name">.PLY</span>
-        <span style="color: var(--muted); font-size:13px">General purpose meshes</span>
-        <span><span class="tag tag-green">Per-vertex RGB</span></span>
-        <span style="color: var(--muted); font-size:12px">Blender, MeshLab, CloudCompare</span>
+    </div>
+    <div class="deploy-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Deploy on Railway</h4>
+        <p>Go to <code>railway.app</code> → New Project → Deploy from GitHub repo → select your repo. Railway auto-detects Python and installs dependencies.</p>
       </div>
-      <div class="fmt-row">
-        <span class="fmt-name">.OBJ</span>
-        <span style="color: var(--muted); font-size:13px">3D software exchange</span>
-        <span><span class="tag tag-blue">Vertex color</span></span>
-        <span style="color: var(--muted); font-size:12px">Maya, 3ds Max, Blender, Cinema4D</span>
+    </div>
+    <div class="deploy-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Get your public URL</h4>
+        <p>In Railway dashboard → Settings → Networking → Generate Domain. You'll get a URL like <code>depth3d-api.up.railway.app</code>.</p>
       </div>
-      <div class="fmt-row">
-        <span class="fmt-name">.STL</span>
-        <span style="color: var(--muted); font-size:13px">3D printing</span>
-        <span><span class="tag tag-orange">None (geometry only)</span></span>
-        <span style="color: var(--muted); font-size:12px">Slicer, PrusaSlicer, Cura, AutoCAD</span>
-      </div>
-      <div class="fmt-row">
-        <span class="fmt-name">.glTF</span>
-        <span style="color: var(--muted); font-size:13px">Web & realtime 3D</span>
-        <span><span class="tag tag-green">Per-vertex RGB</span></span>
-        <span style="color: var(--muted); font-size:12px">Three.js, Babylon.js, Unity, Unreal</span>
-      </div>
-      <div class="fmt-row">
-        <span class="fmt-name">.XYZ</span>
-        <span style="color: var(--muted); font-size:13px">Point cloud analysis</span>
-        <span><span class="tag tag-purple">RGB per point</span></span>
-        <span style="color: var(--muted); font-size:12px">CloudCompare, MATLAB, Open3D</span>
+    </div>
+    <div class="deploy-step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Paste URL into this app</h4>
+        <p>Switch to the <strong>Python engine</strong> above, paste your Railway URL, and the app will verify the connection automatically.</p>
       </div>
     </div>
   </div>
+</div>
 
-  <footer>DEPTH3D · Image-to-3D Pipeline · Python + Flask · Runs locally on port 5000</footer>
+<footer>DEPTH3D · Dual-Engine Image-to-3D · JS (browser) + Python (Railway) · v2.0</footer>
 </div>
 
 <script>
-  const SERVER = 'http://localhost:5000';
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let engine = 'js';         // 'js' | 'py'
+let selectedFile = null;
+let selectedFormat = 'ply';
+let selectedQuality = 'medium';
+let downloadUrl = null;
+let downloadFilename = null;
+let urlCheckTimer = null;
 
-  const dropZone = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('file-input');
-  const browseBtn = document.getElementById('browse-btn');
-  const previewWrap = document.getElementById('preview-wrap');
-  const previewImg = document.getElementById('preview-img');
-  const previewBadge = document.getElementById('preview-badge');
-  const clearBtn = document.getElementById('clear-btn');
-  const convertBtn = document.getElementById('convert-btn');
-  const progressWrap = document.getElementById('progress-wrap');
-  const progressFill = document.getElementById('progress-fill');
-  const progressStep = document.getElementById('progress-step');
-  const progressPct = document.getElementById('progress-pct');
-  const errorPanel = document.getElementById('error-panel');
-  const resultPanel = document.getElementById('result-panel');
-  const resultStats = document.getElementById('result-stats');
-  const downloadBtn = document.getElementById('download-btn');
+const fmtDescs = {
+  ply:  'Binary PLY — color mesh, wide software support',
+  obj:  'OBJ + MTL — universal exchange format, zipped',
+  stl:  'Binary STL — geometry only, ideal for 3D printing',
+  gltf: 'glTF 2.0 — web & realtime 3D (Three.js / Babylon), zipped',
+  xyz:  'ASCII XYZ point cloud — RGB per point',
+};
 
-  let selectedFile = null;
-  let selectedFormat = 'ply';
-  let selectedQuality = 'medium';
-  let downloadUrl = null;
-  let downloadFilename = null;
+// ═══════════════════════════════════════════════════════
+// ENGINE TOGGLE
+// ═══════════════════════════════════════════════════════
+function setEngine(e) {
+  engine = e;
+  const jsBtn = document.getElementById('btn-js');
+  const pyBtn = document.getElementById('btn-py');
+  const urlBar = document.getElementById('py-url-bar');
+  const headerLabel = document.getElementById('header-label');
+  const engineLabel = document.getElementById('engine-label');
 
-  const fmtDescs = {
-    ply:  'Binary PLY — color mesh, wide software support, compact',
-    obj:  'OBJ + MTL — universal exchange format, zipped',
-    stl:  'Binary STL — geometry only, ideal for 3D printing',
-    gltf: 'glTF 2.0 — web & realtime 3D, Babylon/Three.js ready, zipped',
-    xyz:  'ASCII XYZ point cloud — RGB per point, for analysis tools',
-  };
+  jsBtn.className = 'eng-btn' + (e==='js' ? ' active-js' : '');
+  pyBtn.className = 'eng-btn' + (e==='py' ? ' active-py' : '');
 
-  // Format buttons
-  document.getElementById('format-grid').addEventListener('click', e => {
-    const btn = e.target.closest('.fmt-btn');
-    if (!btn) return;
-    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedFormat = btn.dataset.fmt;
-    document.getElementById('fmt-desc').textContent = fmtDescs[selectedFormat];
-  });
-
-  // Quality buttons
-  document.getElementById('quality-grid').addEventListener('click', e => {
-    const btn = e.target.closest('.quality-btn');
-    if (!btn) return;
-    document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedQuality = btn.dataset.q;
-  });
-
-  // Depth slider
-  const depthSlider = document.getElementById('depth-slider');
-  const sliderVal = document.getElementById('slider-val');
-  depthSlider.addEventListener('input', () => {
-    sliderVal.textContent = parseFloat(depthSlider.value).toFixed(2);
-  });
-
-  // Drop zone
-  browseBtn.addEventListener('click', () => fileInput.click());
-  dropZone.addEventListener('click', e => {
-    if (e.target === browseBtn) return;
-    fileInput.click();
-  });
-
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) loadFile(file);
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) loadFile(fileInput.files[0]);
-  });
-
-  clearBtn.addEventListener('click', () => {
-    selectedFile = null;
-    previewWrap.style.display = 'none';
-    dropZone.style.display = '';
-    convertBtn.disabled = true;
-    convertBtn.textContent = 'Select an image to convert';
-    hideResults();
-    fileInput.value = '';
-  });
-
-  function loadFile(file) {
-    selectedFile = file;
-    const url = URL.createObjectURL(file);
-    previewImg.src = url;
-    previewBadge.textContent = file.name.split('.').pop().toUpperCase() + ' · ' + formatBytes(file.size);
-    previewWrap.style.display = 'block';
-    dropZone.style.display = 'none';
-    convertBtn.disabled = false;
-    convertBtn.textContent = 'Convert to 3D ↗';
-    hideResults();
+  if (e === 'py') {
+    urlBar.classList.add('show');
+    setTimeout(() => { urlBar.style.opacity='1'; }, 10);
+    headerLabel.textContent = 'converter.py — Python / Railway';
+    engineLabel.textContent = 'PY';
+    engineLabel.className = 'engine-label py';
+  } else {
+    urlBar.classList.remove('show');
+    headerLabel.textContent = 'converter.js — browser engine';
+    engineLabel.textContent = 'JS';
+    engineLabel.className = 'engine-label js';
   }
+  hideResults();
+}
 
-  function formatBytes(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
-    return (b/1024/1024).toFixed(1) + ' MB';
-  }
+// API URL checker
+const apiInput = document.getElementById('api-url');
+const urlStatus = document.getElementById('url-status');
 
-  function hideResults() {
-    resultPanel.style.display = 'none';
-    errorPanel.style.display = 'none';
-    progressWrap.style.display = 'none';
-  }
+apiInput.addEventListener('input', () => {
+  clearTimeout(urlCheckTimer);
+  urlStatus.className = 'url-status checking';
+  urlStatus.textContent = 'Checking…';
+  urlCheckTimer = setTimeout(checkApiUrl, 800);
+});
 
-  // Animated progress simulation
-  function animateProgress(steps) {
-    let i = 0;
-    progressFill.style.width = '0%';
-    progressWrap.style.display = 'block';
-
-    return new Promise(resolve => {
-      function next() {
-        if (i >= steps.length) { resolve(); return; }
-        const [label, pct, delay] = steps[i++];
-        setTimeout(() => {
-          progressStep.textContent = label;
-          progressPct.textContent = pct + '%';
-          progressFill.style.width = pct + '%';
-          next();
-        }, delay);
-      }
-      next();
-    });
-  }
-
-  // Convert
-  convertBtn.addEventListener('click', async () => {
-    if (!selectedFile) return;
-    hideResults();
-    convertBtn.disabled = true;
-    convertBtn.innerHTML = '<span class="spinner"></span>Processing…';
-
-    const steps = [
-      ['Uploading image…', 10, 100],
-      ['Analyzing depth cues…', 30, 400],
-      ['Estimating depth map…', 55, 600],
-      ['Generating mesh topology…', 75, 700],
-      ['Coloring vertices…', 88, 400],
-      ['Exporting asset…', 96, 300],
-    ];
-
-    const progressPromise = animateProgress(steps);
-
-    const fd = new FormData();
-    fd.append('image', selectedFile);
-    fd.append('format', selectedFormat);
-    fd.append('quality', selectedQuality);
-    fd.append('depth_scale', depthSlider.value);
-
-    try {
-      const [response] = await Promise.all([
-        fetch(`${SERVER}/convert`, { method: 'POST', body: fd }),
-        progressPromise,
-      ]);
-
-      progressFill.style.width = '100%';
-      progressPct.textContent = '100%';
-      progressStep.textContent = 'Done!';
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Server error' }));
-        throw new Error(err.error || 'Conversion failed');
-      }
-
-      const blob = await response.blob();
-      const statsHeader = response.headers.get('X-Mesh-Stats');
-      let stats = {};
-      try { stats = JSON.parse(statsHeader || '{}'); } catch {}
-
-      // Store for download
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-      downloadUrl = URL.createObjectURL(blob);
-      const cd = response.headers.get('Content-Disposition') || '';
-      const match = cd.match(/filename="?([^"]+)"?/);
-      downloadFilename = match ? match[1] : `model.${selectedFormat}`;
-
-      // Show stats
-      resultStats.innerHTML = `
-        <div class="stat-box"><span class="val">${(stats.vertices||0).toLocaleString()}</span><span class="lbl">Vertices</span></div>
-        <div class="stat-box"><span class="val">${(stats.faces||0).toLocaleString()}</span><span class="lbl">Triangles</span></div>
-        <div class="stat-box"><span class="val">${(selectedFormat||'PLY').toUpperCase()}</span><span class="lbl">Format</span></div>
-      `;
-
-      resultPanel.style.display = 'block';
-      setTimeout(() => progressWrap.style.display = 'none', 1000);
-
-    } catch (err) {
-      progressWrap.style.display = 'none';
-      errorPanel.style.display = 'block';
-      errorPanel.textContent = `⚠ ${err.message}`;
-      if (err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('network')) {
-        errorPanel.textContent += '\n\nMake sure the Python backend is running: python3 app.py';
-      }
-    } finally {
-      convertBtn.disabled = false;
-      convertBtn.textContent = 'Convert to 3D ↗';
+async function checkApiUrl() {
+  const url = apiInput.value.trim().replace(/\/$/, '');
+  if (!url) { urlStatus.className='url-status checking'; urlStatus.textContent='Enter your Railway URL above'; return; }
+  try {
+    const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
+    if (r.ok) {
+      urlStatus.className = 'url-status ok';
+      urlStatus.textContent = '✓ Connected — Python server is online';
+    } else {
+      urlStatus.className = 'url-status err';
+      urlStatus.textContent = `✗ Server responded with HTTP ${r.status}`;
     }
-  });
+  } catch {
+    urlStatus.className = 'url-status err';
+    urlStatus.textContent = '✗ Could not reach server — check URL or deployment status';
+  }
+}
 
-  // Download
-  downloadBtn.addEventListener('click', () => {
-    if (!downloadUrl) return;
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = downloadFilename;
-    a.click();
+// ═══════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const browseBtn  = document.getElementById('browse-btn');
+const previewWrap= document.getElementById('preview-wrap');
+const previewImg = document.getElementById('preview-img');
+const previewBadge=document.getElementById('preview-badge');
+const clearBtn   = document.getElementById('clear-btn');
+const convertBtn = document.getElementById('convert-btn');
+
+browseBtn.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('click', e => { if(e.target!==browseBtn) fileInput.click(); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+clearBtn.addEventListener('click', () => {
+  selectedFile=null; previewWrap.style.display='none'; dropZone.style.display='';
+  convertBtn.disabled=true; convertBtn.textContent='Select an image to convert';
+  hideResults(); fileInput.value='';
+});
+
+function loadFile(f) {
+  selectedFile=f;
+  previewImg.src=URL.createObjectURL(f);
+  previewBadge.textContent=f.name.split('.').pop().toUpperCase()+' · '+fmt(f.size);
+  previewWrap.style.display='block'; dropZone.style.display='none';
+  convertBtn.disabled=false; convertBtn.textContent='Convert to 3D ↗';
+  hideResults();
+}
+function fmt(b){ return b<1024?b+' B':b<1048576?(b/1024|0)+' KB':(b/1048576).toFixed(1)+' MB'; }
+
+// Format / quality buttons
+document.getElementById('format-grid').addEventListener('click', e => {
+  const b=e.target.closest('.fmt-btn'); if(!b) return;
+  document.querySelectorAll('.fmt-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); selectedFormat=b.dataset.fmt;
+  document.getElementById('fmt-desc').textContent=fmtDescs[selectedFormat];
+});
+document.querySelector('.quality-grid').addEventListener('click', e => {
+  const b=e.target.closest('.quality-btn'); if(!b) return;
+  document.querySelectorAll('.quality-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); selectedQuality=b.dataset.q;
+});
+
+const depthSlider=document.getElementById('depth-slider');
+const sliderVal=document.getElementById('slider-val');
+depthSlider.addEventListener('input',()=>sliderVal.textContent=parseFloat(depthSlider.value).toFixed(2));
+
+// ═══════════════════════════════════════════════════════
+// PROGRESS ANIMATION
+// ═══════════════════════════════════════════════════════
+function animateProgress(steps) {
+  let i=0;
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('progress-wrap').style.display='block';
+  return new Promise(res=>{
+    function next(){
+      if(i>=steps.length){res();return;}
+      const[label,pct,delay]=steps[i++];
+      setTimeout(()=>{
+        document.getElementById('progress-step').textContent=label;
+        document.getElementById('progress-pct').textContent=pct+'%';
+        document.getElementById('progress-fill').style.width=pct+'%';
+        next();
+      },delay);
+    }
+    next();
   });
+}
+function hideResults(){
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('error-panel').style.display='none';
+  document.getElementById('progress-wrap').style.display='none';
+}
+function showError(msg){
+  const p=document.getElementById('error-panel');
+  p.style.display='block'; p.textContent=msg;
+}
+
+// ═══════════════════════════════════════════════════════
+// JAVASCRIPT ENGINE — full in-browser pipeline
+// ═══════════════════════════════════════════════════════
+async function runJSEngine() {
+  const scaleZ = parseFloat(depthSlider.value);
+  const subsample = {low:4, medium:2, high:1}[selectedQuality] || 2;
+
+  // Load image into canvas
+  const img = await loadImage(selectedFile);
+  const MAX = 512;
+  let {w, h} = scaleDims(img.width, img.height, MAX);
+  const canvas = document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const pixels = imgData.data; // Uint8ClampedArray RGBA
+
+  // ── Depth estimation ──
+  // Luminance
+  const lum = new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) lum[i]=(0.299*pixels[i*4]+0.587*pixels[i*4+1]+0.114*pixels[i*4+2])/255;
+
+  // Simple box-blur (approximates gaussian)
+  function boxBlur(arr, W, H, r) {
+    const tmp=new Float32Array(W*H);
+    for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+      let s=0,n=0;
+      for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+        const nx=x+dx, ny=y+dy;
+        if(nx>=0&&nx<W&&ny>=0&&ny<H){s+=arr[ny*W+nx];n++;}
+      }
+      tmp[y*W+x]=s/n;
+    }
+    return tmp;
+  }
+
+  // Edge (Laplacian-ish using difference of blurs)
+  const blurR = boxBlur(lum, w, h, 1);
+  const blurC = boxBlur(lum, w, h, 4);
+  const edges = new Float32Array(w*h);
+  let eMax=0;
+  for(let i=0;i<w*h;i++){ edges[i]=Math.abs(lum[i]-blurC[i]); if(edges[i]>eMax)eMax=edges[i]; }
+
+  const smooth = boxBlur(lum, w, h, 3);
+
+  // Combine: luminance + inverse-edge + vertical gradient
+  const depth = new Float32Array(w*h);
+  let dMin=Infinity, dMax=-Infinity;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=y*w+x;
+    const yg = 0.2 + 0.6*(y/(h-1));
+    depth[i] = 0.4*smooth[i] + 0.3*(1-(edges[i]/(eMax+1e-8))) + 0.3*yg;
+    if(depth[i]<dMin)dMin=depth[i]; if(depth[i]>dMax)dMax=depth[i];
+  }
+  const dRange=dMax-dMin+1e-8;
+  for(let i=0;i<w*h;i++) depth[i]=(depth[i]-dMin)/dRange;
+
+  // ── Mesh generation ──
+  const ys=[],xs=[];
+  for(let y=0;y<h;y+=subsample)ys.push(y);
+  for(let x=0;x<w;x+=subsample)xs.push(x);
+  const sh=ys.length, sw=xs.length;
+  const nv=sh*sw;
+
+  const vertices=new Float32Array(nv*3);
+  const colors=new Uint8Array(nv*3);
+  for(let r=0;r<sh;r++) for(let c=0;c<sw;c++){
+    const vi=r*sw+c;
+    const px=xs[c], py=ys[r];
+    const pi=py*w+px;
+    vertices[vi*3+0]=(px/(w-1))*2-1;
+    vertices[vi*3+1]=-((py/(h-1))*2-1);
+    vertices[vi*3+2]=depth[pi]*scaleZ;
+    colors[vi*3+0]=pixels[pi*4+0];
+    colors[vi*3+1]=pixels[pi*4+1];
+    colors[vi*3+2]=pixels[pi*4+2];
+  }
+
+  const nf=(sh-1)*(sw-1)*2;
+  const faces=new Int32Array(nf*3);
+  let fi=0;
+  const idx=(r,c)=>r*sw+c;
+  for(let r=0;r<sh-1;r++) for(let c=0;c<sw-1;c++){
+    const a=idx(r,c),b=idx(r,c+1),cc=idx(r+1,c),d=idx(r+1,c+1);
+    faces[fi++]=a;faces[fi++]=b;faces[fi++]=cc;
+    faces[fi++]=b;faces[fi++]=d;faces[fi++]=cc;
+  }
+
+  // ── Export ──
+  const stem='model_js';
+  let data, mime, filename;
+
+  if(selectedFormat==='ply'){
+    data=exportPLY(vertices,colors,faces,nv,nf/2|nf);
+    mime='application/octet-stream'; filename=`${stem}.ply`;
+  } else if(selectedFormat==='obj'){
+    data=exportOBJ(vertices,colors,faces,nv,stem);
+    mime='application/zip'; filename=`${stem}_obj.zip`;
+  } else if(selectedFormat==='stl'){
+    data=exportSTL(vertices,faces);
+    mime='application/octet-stream'; filename=`${stem}.stl`;
+  } else if(selectedFormat==='gltf'){
+    data=exportGLTF(vertices,colors,faces,stem);
+    mime='application/zip'; filename=`${stem}_gltf.zip`;
+  } else {
+    data=exportXYZ(vertices,colors,nv);
+    mime='text/plain'; filename=`${stem}.xyz`;
+  }
+
+  return {data, mime, filename, vertices:nv, faces:faces.length/3, imageSize:[w,h]};
+}
+
+function loadImage(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(); img.onload=()=>res(img); img.onerror=rej;
+    img.src=URL.createObjectURL(file);
+  });
+}
+function scaleDims(w,h,max){
+  if(Math.max(w,h)<=max) return {w,h};
+  const s=max/Math.max(w,h); return {w:Math.round(w*s),h:Math.round(h*s)};
+}
+
+// PLY export
+function exportPLY(vertices,colors,faces,nv,nfTriangles){
+  // Count actual triangles
+  const nf=faces.length/3;
+  const hdr=`ply\nformat binary_little_endian 1.0\nelement vertex ${nv}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face ${nf}\nproperty list uchar int vertex_indices\nend_header\n`;
+  const hdrBytes=new TextEncoder().encode(hdr);
+  const vBytes=nv*(4*3+3);
+  const fBytes=nf*(1+4*3);
+  const buf=new ArrayBuffer(hdrBytes.length+vBytes+fBytes);
+  const view=new DataView(buf);
+  let off=0;
+  new Uint8Array(buf).set(hdrBytes,0); off+=hdrBytes.length;
+  for(let i=0;i<nv;i++){
+    view.setFloat32(off,vertices[i*3+0],true);off+=4;
+    view.setFloat32(off,vertices[i*3+1],true);off+=4;
+    view.setFloat32(off,vertices[i*3+2],true);off+=4;
+    view.setUint8(off++,colors[i*3+0]);
+    view.setUint8(off++,colors[i*3+1]);
+    view.setUint8(off++,colors[i*3+2]);
+  }
+  for(let i=0;i<nf;i++){
+    view.setUint8(off++,3);
+    view.setInt32(off,faces[i*3+0],true);off+=4;
+    view.setInt32(off,faces[i*3+1],true);off+=4;
+    view.setInt32(off,faces[i*3+2],true);off+=4;
+  }
+  return new Uint8Array(buf);
+}
+
+// OBJ export (as zip via manual zip builder)
+function exportOBJ(vertices,colors,faces,nv,stem){
+  const lines=[`# img3d-js`,`mtllib ${stem}.mtl`,``];
+  for(let i=0;i<nv;i++){
+    const r=(colors[i*3]/255).toFixed(4),g=(colors[i*3+1]/255).toFixed(4),b=(colors[i*3+2]/255).toFixed(4);
+    lines.push(`v ${vertices[i*3].toFixed(5)} ${vertices[i*3+1].toFixed(5)} ${vertices[i*3+2].toFixed(5)} ${r} ${g} ${b}`);
+  }
+  lines.push('');
+  const nf=faces.length/3;
+  for(let i=0;i<nf;i++) lines.push(`f ${faces[i*3]+1} ${faces[i*3+1]+1} ${faces[i*3+2]+1}`);
+  const objStr=lines.join('\n');
+  const mtlStr='newmtl default\nKa 1 1 1\nKd 1 1 1\n';
+  return buildZip([{name:`${stem}.obj`,data:objStr},{name:`${stem}.mtl`,data:mtlStr}]);
+}
+
+// STL export
+function exportSTL(vertices,faces){
+  const nf=faces.length/3;
+  const buf=new ArrayBuffer(80+4+nf*50);
+  const view=new DataView(buf);
+  view.setUint32(80,nf,true);
+  let off=84;
+  for(let i=0;i<nf;i++){
+    const ai=faces[i*3],bi=faces[i*3+1],ci=faces[i*3+2];
+    const ax=vertices[ai*3],ay=vertices[ai*3+1],az=vertices[ai*3+2];
+    const bx=vertices[bi*3],by=vertices[bi*3+1],bz=vertices[bi*3+2];
+    const cx=vertices[ci*3],cy=vertices[ci*3+1],cz=vertices[ci*3+2];
+    const ex=bx-ax,ey=by-ay,ez=bz-az,fx=cx-ax,fy=cy-ay,fz=cz-az;
+    let nx=ey*fz-ez*fy,ny=ez*fx-ex*fz,nz=ex*fy-ey*fx;
+    const ln=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    nx/=ln;ny/=ln;nz/=ln;
+    view.setFloat32(off,nx,true);off+=4; view.setFloat32(off,ny,true);off+=4; view.setFloat32(off,nz,true);off+=4;
+    view.setFloat32(off,ax,true);off+=4; view.setFloat32(off,ay,true);off+=4; view.setFloat32(off,az,true);off+=4;
+    view.setFloat32(off,bx,true);off+=4; view.setFloat32(off,by,true);off+=4; view.setFloat32(off,bz,true);off+=4;
+    view.setFloat32(off,cx,true);off+=4; view.setFloat32(off,cy,true);off+=4; view.setFloat32(off,cz,true);off+=4;
+    off+=2; // attrib
+  }
+  return new Uint8Array(buf);
+}
+
+// glTF export
+function exportGLTF(vertices,colors,faces,stem){
+  function pad(arr){ const extra=(-arr.length%4+4)%4; const r=new Uint8Array(arr.length+extra); r.set(arr); return r; }
+  const vb=pad(new Uint8Array(vertices.buffer)); const vl=vb.length;
+  const cf=new Float32Array(colors.length);
+  for(let i=0;i<colors.length;i++) cf[i]=colors[i]/255;
+  const cb=pad(new Uint8Array(cf.buffer)); const cl=cb.length;
+  const fi32=new Uint32Array(faces.buffer); const fb=pad(new Uint8Array(fi32.buffer)); const fl=fb.length;
+  const bin=new Uint8Array(vl+cl+fl);
+  bin.set(vb,0); bin.set(cb,vl); bin.set(fb,vl+cl);
+  const nv=vertices.length/3;
+  let vmin=[Infinity,Infinity,Infinity],vmax=[-Infinity,-Infinity,-Infinity];
+  for(let i=0;i<nv;i++){
+    for(let j=0;j<3;j++){
+      if(vertices[i*3+j]<vmin[j])vmin[j]=vertices[i*3+j];
+      if(vertices[i*3+j]>vmax[j])vmax[j]=vertices[i*3+j];
+    }
+  }
+  const gltf={asset:{version:'2.0',generator:'img3d-js'},scene:0,
+    scenes:[{nodes:[0]}],nodes:[{mesh:0}],
+    meshes:[{name:stem,primitives:[{attributes:{POSITION:0,COLOR_0:1},indices:2,mode:4}]}],
+    accessors:[
+      {bufferView:0,componentType:5126,count:nv,type:'VEC3',min:Array.from(vmin),max:Array.from(vmax)},
+      {bufferView:1,componentType:5126,count:nv,type:'VEC3'},
+      {bufferView:2,componentType:5125,count:faces.length/3*3,type:'SCALAR'}],
+    bufferViews:[
+      {buffer:0,byteOffset:0,byteLength:vl,target:34962},
+      {buffer:0,byteOffset:vl,byteLength:cl,target:34962},
+      {buffer:0,byteOffset:vl+cl,byteLength:fl,target:34963}],
+    buffers:[{byteLength:bin.length,uri:`${stem}.bin`}]};
+  return buildZip([{name:`${stem}.gltf`,data:JSON.stringify(gltf,null,2)},{name:`${stem}.bin`,data:bin}]);
+}
+
+// XYZ export
+function exportXYZ(vertices,colors,nv){
+  const lines=[];
+  for(let i=0;i<nv;i++)
+    lines.push(`${vertices[i*3].toFixed(5)} ${vertices[i*3+1].toFixed(5)} ${vertices[i*3+2].toFixed(5)} ${colors[i*3]} ${colors[i*3+1]} ${colors[i*3+2]}`);
+  return new TextEncoder().encode(lines.join('\n'));
+}
+
+// ── Minimal ZIP builder ──────────────────────────────────────────────────────
+function buildZip(files){
+  // Deflate-less (STORE method) zip — no external libs needed
+  const enc=new TextEncoder();
+  const entries=[];
+  let dataOffset=0;
+  for(const f of files){
+    const nameBytes=enc.encode(f.name);
+    const data=typeof f.data==='string'?enc.encode(f.data):f.data;
+    entries.push({name:nameBytes,data,offset:dataOffset});
+    dataOffset+=30+nameBytes.length+data.length;
+  }
+  const cdSize=entries.reduce((s,e)=>s+46+e.name.length,0);
+  const totalSize=dataOffset+cdSize+22;
+  const buf=new Uint8Array(totalSize);
+  const view=new DataView(buf.buffer);
+  let off=0;
+  // Local file headers + data
+  for(const e of entries){
+    const crc=crc32(e.data);
+    view.setUint32(off,0x04034b50,true);off+=4;  // sig
+    view.setUint16(off,20,true);off+=2;           // version
+    view.setUint16(off,0,true);off+=2;            // flags
+    view.setUint16(off,0,true);off+=2;            // method STORE
+    view.setUint16(off,0,true);off+=2;            // mod time
+    view.setUint16(off,0,true);off+=2;            // mod date
+    view.setUint32(off,crc,true);off+=4;
+    view.setUint32(off,e.data.length,true);off+=4;
+    view.setUint32(off,e.data.length,true);off+=4;
+    view.setUint16(off,e.name.length,true);off+=2;
+    view.setUint16(off,0,true);off+=2;            // extra len
+    buf.set(e.name,off);off+=e.name.length;
+    buf.set(e.data,off);off+=e.data.length;
+  }
+  // Central directory
+  const cdStart=off;
+  for(const e of entries){
+    const crc=crc32(e.data);
+    view.setUint32(off,0x02014b50,true);off+=4;
+    view.setUint16(off,20,true);off+=2;
+    view.setUint16(off,20,true);off+=2;
+    view.setUint16(off,0,true);off+=2;
+    view.setUint16(off,0,true);off+=2;
+    view.setUint16(off,0,true);off+=2;
+    view.setUint16(off,0,true);off+=2;
+    view.setUint32(off,crc,true);off+=4;
+    view.setUint32(off,e.data.length,true);off+=4;
+    view.setUint32(off,e.data.length,true);off+=4;
+    view.setUint16(off,e.name.length,true);off+=2;
+    view.setUint16(off,0,true);off+=2; // extra
+    view.setUint16(off,0,true);off+=2; // comment
+    view.setUint16(off,0,true);off+=2; // disk start
+    view.setUint16(off,0,true);off+=2; // int attr
+    view.setUint32(off,0,true);off+=4; // ext attr
+    view.setUint32(off,e.offset,true);off+=4;
+    buf.set(e.name,off);off+=e.name.length;
+  }
+  // End of central directory
+  view.setUint32(off,0x06054b50,true);off+=4;
+  view.setUint16(off,0,true);off+=2;
+  view.setUint16(off,0,true);off+=2;
+  view.setUint16(off,entries.length,true);off+=2;
+  view.setUint16(off,entries.length,true);off+=2;
+  view.setUint32(off,cdSize,true);off+=4;
+  view.setUint32(off,cdStart,true);off+=4;
+  view.setUint16(off,0,true);
+  return buf;
+}
+
+function crc32(data){
+  const t=makeCRCTable(); let c=0xFFFFFFFF;
+  for(let i=0;i<data.length;i++) c=t[(c^data[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;
+}
+let _crcTable=null;
+function makeCRCTable(){
+  if(_crcTable) return _crcTable;
+  _crcTable=new Uint32Array(256);
+  for(let n=0;n<256;n++){
+    let c=n;
+    for(let k=0;k<8;k++) c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);
+    _crcTable[n]=c;
+  }
+  return _crcTable;
+}
+
+// ═══════════════════════════════════════════════════════
+// PYTHON ENGINE — sends to Railway
+// ═══════════════════════════════════════════════════════
+async function runPYEngine() {
+  const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/,'');
+  if (!apiUrl) throw new Error('Please enter your Railway API URL first.');
+
+  const fd=new FormData();
+  fd.append('image', selectedFile);
+  fd.append('format', selectedFormat);
+  fd.append('quality', selectedQuality);
+  fd.append('depth_scale', depthSlider.value);
+
+  const response=await fetch(`${apiUrl}/convert`,{method:'POST',body:fd});
+  if(!response.ok){
+    const err=await response.json().catch(()=>({error:'Server error'}));
+    throw new Error(err.error||`HTTP ${response.status}`);
+  }
+  const blob=await response.blob();
+  const statsH=response.headers.get('X-Mesh-Stats');
+  let stats={}; try{stats=JSON.parse(statsH||'{}')}catch{}
+
+  const cd=response.headers.get('Content-Disposition')||'';
+  const m=cd.match(/filename="?([^"]+)"?/);
+  const filename=m?m[1]:`model.${selectedFormat}`;
+
+  // Convert blob to Uint8Array for consistent handling
+  const data=new Uint8Array(await blob.arrayBuffer());
+  return {data, mime:blob.type, filename, vertices:stats.vertices||0,
+          faces:stats.faces||0, imageSize:stats.image_size||[0,0]};
+}
+
+// ═══════════════════════════════════════════════════════
+// CONVERT BUTTON
+// ═══════════════════════════════════════════════════════
+convertBtn.addEventListener('click', async () => {
+  if(!selectedFile) return;
+  hideResults();
+  convertBtn.disabled=true;
+  convertBtn.innerHTML='<span class="spinner"></span>Processing…';
+
+  const jsSteps=[
+    ['Loading image…',10,100],['Analysing luminance…',25,300],
+    ['Computing depth map…',50,500],['Building mesh…',72,600],
+    ['Triangulating faces…',88,400],['Exporting file…',96,300],
+  ];
+  const pySteps=[
+    ['Uploading image…',10,100],['Server: depth estimation…',35,600],
+    ['Server: mesh generation…',65,700],['Server: exporting…',90,500],
+  ];
+
+  const steps = engine==='js' ? jsSteps : pySteps;
+  const progressPromise = animateProgress(steps);
+
+  try {
+    let result;
+    if(engine==='js'){
+      const [r] = await Promise.all([runJSEngine(), progressPromise]);
+      result=r;
+    } else {
+      const [r] = await Promise.all([runPYEngine(), progressPromise]);
+      result=r;
+    }
+
+    document.getElementById('progress-fill').style.width='100%';
+    document.getElementById('progress-pct').textContent='100%';
+    document.getElementById('progress-step').textContent='Done!';
+
+    if(downloadUrl) URL.revokeObjectURL(downloadUrl);
+    downloadUrl=URL.createObjectURL(new Blob([result.data],{type:result.mime}));
+    downloadFilename=result.filename;
+
+    document.getElementById('result-stats').innerHTML=`
+      <div class="stat-box"><span class="val">${(result.vertices||0).toLocaleString()}</span><span class="lbl">Vertices</span></div>
+      <div class="stat-box"><span class="val">${(result.faces||0).toLocaleString()}</span><span class="lbl">Triangles</span></div>
+      <div class="stat-box"><span class="val">${selectedFormat.toUpperCase()}</span><span class="lbl">Format</span></div>
+      <div class="stat-box"><span class="val">${engine.toUpperCase()}</span><span class="lbl">Engine</span></div>`;
+
+    document.getElementById('result-panel').style.display='block';
+    setTimeout(()=>document.getElementById('progress-wrap').style.display='none',1000);
+  } catch(err) {
+    document.getElementById('progress-wrap').style.display='none';
+    showError('⚠ '+err.message);
+  } finally {
+    convertBtn.disabled=false; convertBtn.textContent='Convert to 3D ↗';
+  }
+});
+
+document.getElementById('download-btn').addEventListener('click',()=>{
+  if(!downloadUrl) return;
+  const a=document.createElement('a'); a.href=downloadUrl; a.download=downloadFilename; a.click();
+});
 </script>
 </body>
 </html>
