@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEPTH — Image to 3D Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --panel: #16161f;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+    --danger: #ef4444;
+    --success: #10b981;
+    --glow: rgba(0,229,255,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* Glowing orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb-bottom {
+    position: fixed;
+    bottom: -20%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(0,229,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 32px 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-mark {
+    width: 40px; height: 40px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 20px var(--glow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,229,255,0.3), transparent);
+  }
+
+  .logo-mark svg { position: relative; z-index: 1; }
+
+  .logo-text {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #fff;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 60px 0 40px;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+
+  .hero h1 .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.65;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+
+  /* ── Main Card ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.4s forwards;
+  }
+
+  .card-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-red { background: #ef4444; }
+  .dot-yellow { background: #f59e0b; }
+  .dot-green { background: #10b981; }
+
+  /* ── Drop Zone ── */
+  .drop-zone {
+    margin: 28px;
+    border: 2px dashed rgba(0,229,255,0.2);
+    border-radius: 16px;
+    padding: 60px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: rgba(0,229,255,0.02);
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+    box-shadow: inset 0 0 40px rgba(0,229,255,0.04);
+  }
+
+  .drop-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 20px;
+    background: rgba(0,229,255,0.1);
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+
+  .drop-zone h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .drop-zone .browse {
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  #file-input { display: none; }
+
+  /* Preview */
+  .preview-wrap {
+    display: none;
+    margin: 0 28px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+  }
+
+  .preview-wrap img {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    background: #0d0d14;
+    display: block;
+  }
+
+  .preview-badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .preview-clear {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+
+  .preview-clear:hover { background: rgba(239,68,68,0.2); color: var(--danger); border-color: var(--danger); }
+
+  /* ── Options Grid ── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 24px 28px;
+  }
+
+  .option-group label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* Format selector */
+  .format-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .fmt-btn {
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .fmt-btn:hover { border-color: rgba(0,229,255,0.3); color: var(--text); }
+
+  .fmt-btn.active {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,229,255,0.1);
+  }
+
+  .fmt-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+    min-height: 16px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Quality selector */
+  .quality-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .quality-btn {
+    padding: 12px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .quality-btn .q-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+  }
+
+  .quality-btn .q-sub {
+    font-size: 10px;
+    color: rgba(107,107,133,0.6);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .quality-btn:hover { border-color: rgba(0,229,255,0.3); }
+  .quality-btn.active { border-color: var(--accent); background: rgba(0,229,255,0.08); }
+  .quality-btn.active .q-label { color: var(--accent); }
+
+  /* Depth scale slider */
+  .depth-wrap {
+    grid-column: 1 / -1;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    outline: none;
+    border: 1px solid var(--border);
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,229,255,0.4);
+  }
+
+  .slider-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* ── Convert Button ── */
+  .btn-row {
+    padding: 0 28px 28px;
+  }
+
+  .convert-btn {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+  }
+
+  .convert-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .convert-btn:hover::before { opacity: 1; }
+  .convert-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,229,255,0.3); }
+  .convert-btn:active { transform: translateY(0); }
+  .convert-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── Progress ── */
+  .progress-wrap {
+    display: none;
+    padding: 0 28px 28px;
+  }
+
+  .progress-bar-bg {
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-step { color: var(--accent); }
+
+  /* ── Result Panel ── */
+  .result-panel {
+    display: none;
+    margin: 28px;
+    margin-top: 0;
+    padding: 20px;
+    background: rgba(16,185,129,0.07);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 14px;
+  }
+
+  .result-panel .result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .result-panel .result-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--success);
+  }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-box .val {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+  }
+
+  .stat-box .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .download-btn {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid var(--success);
+    border-radius: 10px;
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .download-btn:hover {
+    background: rgba(16,185,129,0.2);
+    box-shadow: 0 4px 20px rgba(16,185,129,0.2);
+  }
+
+  /* ── Error ── */
+  .error-panel {
+    display: none;
+    margin: 0 28px 28px;
+    padding: 16px 20px;
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--danger);
+  }
+
+  /* ── Info Section ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 60px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.6s forwards;
+  }
+
+  .info-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .info-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 14px;
+    font-size: 20px;
+  }
+
+  .info-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .info-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Formats table */
+  .formats-section {
+    margin-bottom: 60px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.7s forwards;
+  }
+
+  .section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .fmt-table {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .fmt-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr 1fr;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    align-items: center;
+  }
+
+  .fmt-row:last-child { border-bottom: none; }
+
+  .fmt-row.header {
+    background: var(--surface);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .fmt-name {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 12px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .tag-blue { background: rgba(0,229,255,0.12); color: var(--accent); }
+  .tag-orange { background: rgba(245,158,11,0.15); color: var(--accent3); }
+  .tag-purple { background: rgba(124,58,237,0.15); color: #a78bfa; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  /* Server status */
+  .server-note {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 0 28px 16px;
+    line-height: 1.6;
+  }
+
+  .server-note code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  @media (max-width: 640px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .format-grid { grid-template-columns: repeat(3, 1fr); }
+    .info-grid { grid-template-columns: 1fr; }
+    .result-stats { grid-template-columns: repeat(3, 1fr); }
+    .fmt-table { display: none; }
+    .hero h1 { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="orb-bottom"></div>
+
+<div class="wrapper">
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2 L18 16 L2 16 Z" stroke="#00e5ff" stroke-width="1.5" fill="rgba(0,229,255,0.15)"/>
+          <path d="M10 7 L15 16 L5 16 Z" fill="rgba(0,229,255,0.3)"/>
+        </svg>
+      </div>
+      <span class="logo-text">DEPTH<span>3D</span></span>
+    </div>
+    <span class="badge">v1.0 · LOCAL</span>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <p class="hero-eyebrow">▸ AI-Powered Depth Estimation</p>
+    <h1>
+      Turn any image into
+      <span class="line2">a 3D model</span>
+    </h1>
+    <p>Upload a photo. Our depth-estimation engine reconstructs geometry and exports production-ready 3D assets in multiple formats.</p>
+  </section>
+
+  <!-- Main Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="dot dot-red"></span>
+      <span class="dot dot-yellow"></span>
+      <span class="dot dot-green"></span>
+      &nbsp;&nbsp;converter.py — running on localhost:5000
+    </div>
+
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*">
+      <div class="drop-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+      </div>
+      <h3>Drop your image here</h3>
+      <p>PNG, JPG, WEBP, GIF · Up to 32MB · or <span class="browse" id="browse-btn">browse files</span></p>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-wrap" id="preview-wrap">
+      <img id="preview-img" src="" alt="Preview">
+      <span class="preview-badge" id="preview-badge">IMAGE</span>
+      <button class="preview-clear" id="clear-btn" title="Clear">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 1l12 12M13 1L1 13"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Options -->
+    <div class="options-grid">
+      <!-- Format -->
+      <div class="option-group" style="grid-column: 1 / -1">
+        <label>Export Format</label>
+        <div class="format-grid" id="format-grid">
+          <button class="fmt-btn active" data-fmt="ply">PLY</button>
+          <button class="fmt-btn" data-fmt="obj">OBJ</button>
+          <button class="fmt-btn" data-fmt="stl">STL</button>
+          <button class="fmt-btn" data-fmt="gltf">glTF</button>
+          <button class="fmt-btn" data-fmt="xyz">XYZ</button>
+        </div>
+        <div class="fmt-desc" id="fmt-desc">Binary PLY — color mesh, wide software support, compact</div>
+      </div>
+
+      <!-- Quality -->
+      <div class="option-group">
+        <label>Mesh Quality</label>
+        <div class="quality-grid" id="quality-grid">
+          <button class="quality-btn" data-q="low">
+            <span class="q-label">LOW</span>
+            <span class="q-sub">Fast</span>
+          </button>
+          <button class="quality-btn active" data-q="medium">
+            <span class="q-label">MED</span>
+            <span class="q-sub">Balanced</span>
+          </button>
+          <button class="quality-btn" data-q="high">
+            <span class="q-label">HIGH</span>
+            <span class="q-sub">Dense</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Depth Scale -->
+      <div class="option-group">
+        <label>Depth Extrusion</label>
+        <div class="slider-row">
+          <input type="range" id="depth-slider" min="0.1" max="1.0" step="0.05" value="0.4">
+          <span class="slider-val" id="slider-val">0.40</span>
+        </div>
+        <div class="fmt-desc" style="margin-top: 6px;">Controls how tall the 3D relief appears</div>
+      </div>
+    </div>
+
+    <!-- Convert Button -->
+    <div class="btn-row">
+      <button class="convert-btn" id="convert-btn" disabled>
+        Select an image to convert
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label">
+        <span id="progress-step">Initializing...</span>
+        <span id="progress-pct">0%</span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-panel" id="error-panel"></div>
+
+    <!-- Result -->
+    <div class="result-panel" id="result-panel">
+      <div class="result-header">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#10b981"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        <span class="result-title">3D Asset Ready</span>
+      </div>
+      <div class="result-stats" id="result-stats"></div>
+      <button class="download-btn" id="download-btn">⬇ Download 3D File</button>
+    </div>
+
+    <!-- Server note -->
+    <div class="server-note" id="server-note">
+      Run the backend: <code>python3 app.py</code> — connects to <code>localhost:5000</code>
+    </div>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon" style="background: rgba(0,229,255,0.1);">🔭</div>
+      <h4>Depth Estimation</h4>
+      <p>Heuristic depth analysis uses luminance, edge detection, and perspective cues to reconstruct geometry from a single image.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon" style="background: rgba(124,58,237,0.1);">🧩</div>
+      <h4>Mesh Generation</h4>
+      <p>A dense triangulated mesh is built from the depth map, preserving the original image colors as per-vertex color data.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon" style="background: rgba(245,158,11,0.1);">📦</div>
+      <h4>Multi-Format Export</h4>
+      <p>Export to PLY, OBJ, STL, glTF 2.0, or XYZ point cloud. Each format targets different 3D workflows and applications.</p>
+    </div>
+  </div>
+
+  <!-- Formats Table -->
+  <div class="formats-section">
+    <div class="section-title">▸ Format Comparison</div>
+    <div class="fmt-table">
+      <div class="fmt-row header">
+        <span>Format</span>
+        <span>Best For</span>
+        <span>Color Support</span>
+        <span>Compatible With</span>
+      </div>
+      <div class="fmt-row">
+        <span class="fmt-name">.PLY</span>
+        <span style="color: var(--muted); font-size:13px">General purpose meshes</span>
+        <span><span class="tag tag-green">Per-vertex RGB</span></span>
+        <span style="color: var(--muted); font-size:12px">Blender, MeshLab, CloudCompare</span>
+      </div>
+      <div class="fmt-row">
+        <span class="fmt-name">.OBJ</span>
+        <span style="color: var(--muted); font-size:13px">3D software exchange</span>
+        <span><span class="tag tag-blue">Vertex color</span></span>
+        <span style="color: var(--muted); font-size:12px">Maya, 3ds Max, Blender, Cinema4D</span>
+      </div>
+      <div class="fmt-row">
+        <span class="fmt-name">.STL</span>
+        <span style="color: var(--muted); font-size:13px">3D printing</span>
+        <span><span class="tag tag-orange">None (geometry only)</span></span>
+        <span style="color: var(--muted); font-size:12px">Slicer, PrusaSlicer, Cura, AutoCAD</span>
+      </div>
+      <div class="fmt-row">
+        <span class="fmt-name">.glTF</span>
+        <span style="color: var(--muted); font-size:13px">Web & realtime 3D</span>
+        <span><span class="tag tag-green">Per-vertex RGB</span></span>
+        <span style="color: var(--muted); font-size:12px">Three.js, Babylon.js, Unity, Unreal</span>
+      </div>
+      <div class="fmt-row">
+        <span class="fmt-name">.XYZ</span>
+        <span style="color: var(--muted); font-size:13px">Point cloud analysis</span>
+        <span><span class="tag tag-purple">RGB per point</span></span>
+        <span style="color: var(--muted); font-size:12px">CloudCompare, MATLAB, Open3D</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>DEPTH3D · Image-to-3D Pipeline · Python + Flask · Runs locally on port 5000</footer>
+</div>
+
+<script>
+  const SERVER = 'http://localhost:5000';
+
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const browseBtn = document.getElementById('browse-btn');
+  const previewWrap = document.getElementById('preview-wrap');
+  const previewImg = document.getElementById('preview-img');
+  const previewBadge = document.getElementById('preview-badge');
+  const clearBtn = document.getElementById('clear-btn');
+  const convertBtn = document.getElementById('convert-btn');
+  const progressWrap = document.getElementById('progress-wrap');
+  const progressFill = document.getElementById('progress-fill');
+  const progressStep = document.getElementById('progress-step');
+  const progressPct = document.getElementById('progress-pct');
+  const errorPanel = document.getElementById('error-panel');
+  const resultPanel = document.getElementById('result-panel');
+  const resultStats = document.getElementById('result-stats');
+  const downloadBtn = document.getElementById('download-btn');
+
+  let selectedFile = null;
+  let selectedFormat = 'ply';
+  let selectedQuality = 'medium';
+  let downloadUrl = null;
+  let downloadFilename = null;
+
+  const fmtDescs = {
+    ply:  'Binary PLY — color mesh, wide software support, compact',
+    obj:  'OBJ + MTL — universal exchange format, zipped',
+    stl:  'Binary STL — geometry only, ideal for 3D printing',
+    gltf: 'glTF 2.0 — web & realtime 3D, Babylon/Three.js ready, zipped',
+    xyz:  'ASCII XYZ point cloud — RGB per point, for analysis tools',
+  };
+
+  // Format buttons
+  document.getElementById('format-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.fmt-btn');
+    if (!btn) return;
+    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedFormat = btn.dataset.fmt;
+    document.getElementById('fmt-desc').textContent = fmtDescs[selectedFormat];
+  });
+
+  // Quality buttons
+  document.getElementById('quality-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.quality-btn');
+    if (!btn) return;
+    document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedQuality = btn.dataset.q;
+  });
+
+  // Depth slider
+  const depthSlider = document.getElementById('depth-slider');
+  const sliderVal = document.getElementById('slider-val');
+  depthSlider.addEventListener('input', () => {
+    sliderVal.textContent = parseFloat(depthSlider.value).toFixed(2);
+  });
+
+  // Drop zone
+  browseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', e => {
+    if (e.target === browseBtn) return;
+    fileInput.click();
+  });
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    selectedFile = null;
+    previewWrap.style.display = 'none';
+    dropZone.style.display = '';
+    convertBtn.disabled = true;
+    convertBtn.textContent = 'Select an image to convert';
+    hideResults();
+    fileInput.value = '';
+  });
+
+  function loadFile(file) {
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewBadge.textContent = file.name.split('.').pop().toUpperCase() + ' · ' + formatBytes(file.size);
+    previewWrap.style.display = 'block';
+    dropZone.style.display = 'none';
+    convertBtn.disabled = false;
+    convertBtn.textContent = 'Convert to 3D ↗';
+    hideResults();
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024*1024) return (b/1024).toFixed(0) + ' KB';
+    return (b/1024/1024).toFixed(1) + ' MB';
+  }
+
+  function hideResults() {
+    resultPanel.style.display = 'none';
+    errorPanel.style.display = 'none';
+    progressWrap.style.display = 'none';
+  }
+
+  // Animated progress simulation
+  function animateProgress(steps) {
+    let i = 0;
+    progressFill.style.width = '0%';
+    progressWrap.style.display = 'block';
+
+    return new Promise(resolve => {
+      function next() {
+        if (i >= steps.length) { resolve(); return; }
+        const [label, pct, delay] = steps[i++];
+        setTimeout(() => {
+          progressStep.textContent = label;
+          progressPct.textContent = pct + '%';
+          progressFill.style.width = pct + '%';
+          next();
+        }, delay);
+      }
+      next();
+    });
+  }
+
+  // Convert
+  convertBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    hideResults();
+    convertBtn.disabled = true;
+    convertBtn.innerHTML = '<span class="spinner"></span>Processing…';
+
+    const steps = [
+      ['Uploading image…', 10, 100],
+      ['Analyzing depth cues…', 30, 400],
+      ['Estimating depth map…', 55, 600],
+      ['Generating mesh topology…', 75, 700],
+      ['Coloring vertices…', 88, 400],
+      ['Exporting asset…', 96, 300],
+    ];
+
+    const progressPromise = animateProgress(steps);
+
+    const fd = new FormData();
+    fd.append('image', selectedFile);
+    fd.append('format', selectedFormat);
+    fd.append('quality', selectedQuality);
+    fd.append('depth_scale', depthSlider.value);
+
+    try {
+      const [response] = await Promise.all([
+        fetch(`${SERVER}/convert`, { method: 'POST', body: fd }),
+        progressPromise,
+      ]);
+
+      progressFill.style.width = '100%';
+      progressPct.textContent = '100%';
+      progressStep.textContent = 'Done!';
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Server error' }));
+        throw new Error(err.error || 'Conversion failed');
+      }
+
+      const blob = await response.blob();
+      const statsHeader = response.headers.get('X-Mesh-Stats');
+      let stats = {};
+      try { stats = JSON.parse(statsHeader || '{}'); } catch {}
+
+      // Store for download
+      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+      downloadUrl = URL.createObjectURL(blob);
+      const cd = response.headers.get('Content-Disposition') || '';
+      const match = cd.match(/filename="?([^"]+)"?/);
+      downloadFilename = match ? match[1] : `model.${selectedFormat}`;
+
+      // Show stats
+      resultStats.innerHTML = `
+        <div class="stat-box"><span class="val">${(stats.vertices||0).toLocaleString()}</span><span class="lbl">Vertices</span></div>
+        <div class="stat-box"><span class="val">${(stats.faces||0).toLocaleString()}</span><span class="lbl">Triangles</span></div>
+        <div class="stat-box"><span class="val">${(selectedFormat||'PLY').toUpperCase()}</span><span class="lbl">Format</span></div>
+      `;
+
+      resultPanel.style.display = 'block';
+      setTimeout(() => progressWrap.style.display = 'none', 1000);
+
+    } catch (err) {
+      progressWrap.style.display = 'none';
+      errorPanel.style.display = 'block';
+      errorPanel.textContent = `⚠ ${err.message}`;
+      if (err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('network')) {
+        errorPanel.textContent += '\n\nMake sure the Python backend is running: python3 app.py';
+      }
+    } finally {
+      convertBtn.disabled = false;
+      convertBtn.textContent = 'Convert to 3D ↗';
+    }
+  });
+
+  // Download
+  downloadBtn.addEventListener('click', () => {
+    if (!downloadUrl) return;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = downloadFilename;
+    a.click();
+  });
+</script>
+</body>
+</html>
