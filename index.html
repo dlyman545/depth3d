@@ -328,7 +328,15 @@ footer a{color:var(--accent);text-decoration:none}
 </div>
 
 <div class="eng-config" id="cfg-msh">
-  <span class="cfg-label">Meshy API Key</span>
+  <span class="cfg-label">Railway Proxy URL</span>
+  <div class="cfg-row">
+    <input class="url-input" id="msh-url" type="text"
+      placeholder="https://your-app.up.railway.app"
+      style="border-color:rgba(251,146,60,0.3)">
+  </div>
+  <div class="cfg-status chk" id="msh-url-status">Paste your Railway URL above</div>
+
+  <span class="cfg-label" style="margin-top:14px;display:block">Meshy API Key</span>
   <div class="cfg-row">
     <input class="key-input" id="msh-key" type="text" placeholder="msy_xxxxxxxxxxxx  (or leave blank for test mode)">
   </div>
@@ -337,9 +345,8 @@ footer a{color:var(--accent);text-decoration:none}
     <div class="balance-pill">💳 <span id="balance-txt">— credits</span></div>
   </div>
   <div class="cfg-note">
-    Get a free key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a><br>
-    Free tier = CC BY 4.0 license · Paid plans from $20/mo for full ownership.
-    Run the proxy: <code style="font-size:11px;color:var(--col-meshy)">pip install flask requests && MESHY_API_KEY=msy_xxx python app_meshy.py</code>
+    <strong>Deploy once, use forever:</strong> Push <code style="color:var(--col-meshy)">app.py</code> + <code style="color:var(--col-meshy)">requirements.txt</code> + <code style="color:var(--col-meshy)">Procfile</code> + <code style="color:var(--col-meshy)">railway.toml</code> to GitHub, deploy on <a href="https://railway.app" target="_blank">railway.app</a>, set <code style="color:var(--col-meshy)">MESHY_API_KEY</code> in Railway env vars, paste your Railway URL above.<br><br>
+    Get a free Meshy key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a>
   </div>
 </div>
 
@@ -528,7 +535,11 @@ async function updateStatus() {
   if (engine==='js') { setStat('on', 'JS engine · ready'); return; }
   const url = engine==='tsr'
     ? document.getElementById('tsr-url').value.trim().replace(/\/$/,'')
-    : 'http://localhost:7861';
+    : (document.getElementById('msh-url')?.value||'').trim().replace(/\/$/,'');
+  if (!url) {
+    setStat('off', engine==='msh' ? 'Paste Railway URL above' : 'Enter server URL');
+    return;
+  }
   setStat('loading', 'Connecting…');
   try {
     const key = document.getElementById('msh-key')?.value?.trim() || '';
@@ -546,23 +557,27 @@ async function updateStatus() {
         : (d.error || 'Connected, model not yet loaded');
     } else {
       const bal = d.balance;
-      setStat('on', d.test_mode ? 'Meshy · test mode (0 credits)' : `Meshy · ${bal?.balance ?? '?'} credits`);
+      setStat('on', d.test_mode ? 'Railway · test mode (0 credits)' : `Railway · ${bal?.balance ?? '?'} credits`);
+      document.getElementById('msh-url-status').className='cfg-status ok';
+      document.getElementById('msh-url-status').textContent = '✓ Railway proxy connected';
       document.getElementById('msh-status').className='cfg-status ok';
       document.getElementById('msh-status').textContent = d.test_mode
         ? '✓ Test mode — returns sample model, uses 0 credits'
-        : `✓ Connected · ${bal?.balance ?? '?'} credits remaining`;
+        : `✓ ${bal?.balance ?? '?'} credits remaining`;
       if (bal?.balance !== undefined) {
         document.getElementById('balance-wrap').style.display='block';
         document.getElementById('balance-txt').textContent = bal.balance + ' credits';
       }
     }
   } catch {
-    setStat('off', `${engine==='tsr'?'TripoSR':'Meshy'} server offline`);
-    const sid = engine==='tsr' ? 'tsr-status' : 'msh-status';
-    document.getElementById(sid).className='cfg-status err';
-    document.getElementById(sid).textContent = engine==='tsr'
-      ? '✗ Cannot reach server — run: python app_local.py'
-      : '✗ Cannot reach proxy — run: python app_meshy.py';
+    setStat('off', `${engine==='tsr'?'TripoSR':'Railway'} unreachable`);
+    if (engine==='msh') {
+      document.getElementById('msh-url-status').className='cfg-status err';
+      document.getElementById('msh-url-status').textContent = '✗ Cannot reach Railway URL — check deployment';
+    } else {
+      document.getElementById('tsr-status').className='cfg-status err';
+      document.getElementById('tsr-status').textContent = '✗ Cannot reach server';
+    }
   }
 }
 updateStatus();
@@ -570,6 +585,9 @@ setInterval(updateStatus, 10000);
 
 // Debounced URL/key checks
 document.getElementById('tsr-url')?.addEventListener('input', () => {
+  clearTimeout(urlTimer); urlTimer = setTimeout(updateStatus, 800);
+});
+document.getElementById('msh-url')?.addEventListener('input', () => {
   clearTimeout(urlTimer); urlTimer = setTimeout(updateStatus, 800);
 });
 document.getElementById('msh-key')?.addEventListener('input', () => {
@@ -769,7 +787,8 @@ async function runTSR(){
 
 // ═══════════════════════════════════ MESHY ENGINE ═════════════════
 async function runMeshy(){
-  const base='http://localhost:7861';
+  const base=(document.getElementById('msh-url').value||'').trim().replace(/\/$/,'');
+  if(!base) throw new Error('Paste your Railway URL in the Meshy config panel above.');
   const fd=new FormData();
   const key=document.getElementById('msh-key').value.trim();
   fd.append('image',selFile); fd.append('format',selFmt);
@@ -778,8 +797,8 @@ async function runMeshy(){
   if(key) fd.append('api_key',key);
 
   let pct=10;
-  setProgress(pct,'Submitting to Meshy…');
-  const tick=setInterval(()=>{pct=Math.min(pct+4,85);setProgress(pct,'Waiting for Meshy…');},5000);
+  setProgress(pct,'Submitting to Meshy via Railway…');
+  const tick=setInterval(()=>{pct=Math.min(pct+3,85);setProgress(pct,'Meshy generating 3D model…');},5000);
 
   try {
     const resp=await fetch(`${base}/convert`,{method:'POST',body:fd});
