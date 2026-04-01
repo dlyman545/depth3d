@@ -307,7 +307,7 @@ footer a{color:var(--accent);text-decoration:none}
     <div class="eng-check"></div>
     <div class="eng-head"><span class="eng-icon">☁️</span><span class="eng-tag tag-msh">CLOUD API</span></div>
     <div class="eng-name">Meshy AI</div>
-    <div class="eng-desc">Free-tier cloud API. No GPU, no Python, no installs — just a free API key and your Railway URL.</div>
+    <div class="eng-desc">Cloud AI via a shared Railway proxy. Each user enters their own free Meshy key — no installs, no server setup for anyone.</div>
     <div class="eng-pros"><span class="pro tag-free" style="background:rgba(16,185,129,.12);color:var(--success)">Free tier</span><span class="pro">No GPU</span><span class="pro">Textured</span></div>
   </div>
 </div>
@@ -328,25 +328,27 @@ footer a{color:var(--accent);text-decoration:none}
 </div>
 
 <div class="eng-config" id="cfg-msh">
-  <span class="cfg-label">Railway Proxy URL</span>
+  <span class="cfg-label">Proxy URL <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(shared Railway deployment)</span></span>
   <div class="cfg-row">
     <input class="url-input" id="msh-url" type="text"
       placeholder="https://your-app.up.railway.app"
+      value="https://web-production-c2b9f.up.railway.app"
       style="border-color:rgba(251,146,60,0.3)">
   </div>
   <div class="cfg-status chk" id="msh-url-status">Paste your Railway URL above</div>
 
-  <span class="cfg-label" style="margin-top:14px;display:block">Meshy API Key</span>
+  <span class="cfg-label" style="margin-top:14px;display:block">Your Meshy API Key <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(stays in your browser, never stored)</span></span>
   <div class="cfg-row">
-    <input class="key-input" id="msh-key" type="text" placeholder="msy_xxxxxxxxxxxx  (or leave blank for test mode)">
+    <input class="key-input" id="msh-key" type="password" placeholder="msy_xxxxxxxxxxxx">
   </div>
-  <div class="cfg-status chk" id="msh-status">Leave blank to use test mode (returns sample model, 0 credits)</div>
+  <div class="cfg-status chk" id="msh-status">Each user enters their own key — credits come from their account</div>
   <div id="balance-wrap" style="display:none">
     <div class="balance-pill">💳 <span id="balance-txt">— credits</span></div>
   </div>
-  <div class="cfg-note">
-    <strong>Deploy once, use forever:</strong> Push <code style="color:var(--col-meshy)">app.py</code> + <code style="color:var(--col-meshy)">requirements.txt</code> + <code style="color:var(--col-meshy)">Procfile</code> + <code style="color:var(--col-meshy)">railway.toml</code> to GitHub, deploy on <a href="https://railway.app" target="_blank">railway.app</a>, set <code style="color:var(--col-meshy)">MESHY_API_KEY</code> in Railway env vars, paste your Railway URL above.<br><br>
-    Get a free Meshy key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a>
+  <div class="cfg-note" style="margin-top:10px">
+    🔑 Get a free key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a><br>
+    🌐 One Railway deployment serves everyone — each person uses their own key and credits.<br>
+    🔒 Keys are sent directly to your proxy per request and never logged or stored.
   </div>
 </div>
 
