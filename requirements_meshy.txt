@@ -1,0 +1,6 @@
+# Meshy API proxy — no GPU, no PyTorch, no cloning
+flask>=3.0.3
+requests>=2.32.0
+pillow>=10.4.0
+# Optional: for PLY conversion from OBJ
+# pip install trimesh

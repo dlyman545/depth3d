@@ -1,0 +1,26 @@
+# ── TripoSR (pip-install directly from GitHub — no cloning needed) ────────────
+# This installs the `tsr` package and all its deps in one command:
+#   pip install git+https://github.com/VAST-AI-Research/TripoSR.git
+#
+# PyTorch must be installed FIRST (see below). It is NOT auto-installed
+# because the correct CUDA wheel varies by system.
+
+# ── PyTorch — pick ONE of these based on your hardware ───────────────────────
+# CUDA 12.x (most modern NVIDIA GPUs):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# CUDA 11.x:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+# CPU only (slow but works, no GPU required):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Mac (Apple Silicon MPS):
+#   pip install torch torchvision
+
+# ── Server deps ───────────────────────────────────────────────────────────────
+flask>=3.0.3
+pillow>=10.4.0
+numpy>=1.26.4
+trimesh>=4.4.0
+huggingface_hub>=0.23.0
+
+# ── Optional: background removal (recommended) ────────────────────────────────
+# pip install rembg

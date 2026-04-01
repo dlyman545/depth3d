@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEPTH3D — True AI 3D Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080810; --surface:#0f0f1a; --panel:#131320; --card:#181828;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --accent:#00e5ff; --accent2:#7c3aed; --accent3:#f59e0b;
+  --text:#dde0f0; --muted:#5a5a78; --dim:#2e2e48;
+  --danger:#ef4444; --success:#10b981; --warn:#f59e0b;
+  --col-js:#f7df1e; --col-tsr:#a78bfa; --col-meshy:#fb923c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,229,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.012) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+.orb1{top:-20%;right:-10%;width:700px;height:700px;background:radial-gradient(circle,rgba(124,58,237,0.09) 0%,transparent 65%)}
+.orb2{bottom:-20%;left:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(0,229,255,0.06) 0%,transparent 65%)}
+.wrap{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:0 22px}
+
+/* Header */
+header{padding:26px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-mark{width:36px;height:36px;border:1.5px solid var(--accent);border-radius:8px;display:grid;place-items:center;
+  box-shadow:0 0 16px rgba(0,229,255,0.12);position:relative;overflow:hidden}
+.logo-mark::before{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(to top,rgba(0,229,255,0.22),transparent)}
+.logo-mark svg{position:relative;z-index:1}
+.logo-text{font-size:19px;font-weight:800;letter-spacing:0.14em;color:#fff}
+.logo-text span{color:var(--accent)}
+.status-pill{display:flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid var(--border);
+  border-radius:100px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:background 0.4s,box-shadow 0.4s}
+.sdot.on{background:var(--success);box-shadow:0 0 7px rgba(16,185,129,0.5)}
+.sdot.loading{background:var(--warn);animation:blink 1s ease infinite}
+.sdot.off{background:var(--danger)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Hero */
+.hero{padding:48px 0 32px;text-align:center}
+.eyebrow{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.22em;
+  text-transform:uppercase;margin-bottom:16px;opacity:0;animation:up .6s ease .1s forwards}
+.hero h1{font-size:clamp(34px,5.5vw,62px);font-weight:800;line-height:1.06;letter-spacing:-.025em;
+  margin-bottom:16px;opacity:0;animation:up .6s ease .2s forwards}
+.grad{display:block;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto 28px;line-height:1.7;
+  opacity:0;animation:up .6s ease .3s forwards}
+
+/* ── ENGINE SELECTOR ── */
+.engine-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  margin-bottom:24px;opacity:0;animation:up .6s ease .35s forwards}
+.eng{border:1.5px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;
+  transition:all .25s;background:var(--panel);position:relative;text-align:left}
+.eng:hover{border-color:var(--border2)}
+.eng.active-js  {border-color:var(--col-js); background:rgba(247,223,30,.06)}
+.eng.active-tsr {border-color:var(--col-tsr);background:rgba(167,139,250,.06)}
+.eng.active-msh {border-color:var(--col-meshy);background:rgba(251,146,60,.06)}
+.eng-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.eng-icon{font-size:22px}
+.eng-tag{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px}
+.tag-js   {background:rgba(247,223,30,.15);color:var(--col-js)}
+.tag-tsr  {background:rgba(167,139,250,.15);color:var(--col-tsr)}
+.tag-msh  {background:rgba(251,146,60,.15);color:var(--col-meshy)}
+.tag-free {background:rgba(16,185,129,.15);color:var(--success)}
+.eng-name{font-size:14px;font-weight:800;margin-bottom:4px}
+.eng-desc{font-size:12px;color:var(--muted);line-height:1.55}
+.eng-pros{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
+.pro{font-family:'Space Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;
+  background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.eng-check{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;
+  border:1.5px solid var(--border);background:transparent;display:grid;place-items:center;transition:.2s}
+.eng.active-js   .eng-check{border-color:var(--col-js);background:var(--col-js)}
+.eng.active-tsr  .eng-check{border-color:var(--col-tsr);background:var(--col-tsr)}
+.eng.active-msh  .eng-check{border-color:var(--col-meshy);background:var(--col-meshy)}
+.eng-check::after{content:'✓';font-size:10px;color:#000;display:none;font-weight:900}
+.eng.active-js .eng-check::after,
+.eng.active-tsr .eng-check::after,
+.eng.active-msh .eng-check::after{display:block}
+
+/* Engine config panels */
+.eng-config{display:none;background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:18px 20px;margin-bottom:18px;opacity:0;animation:up .3s ease forwards}
+.eng-config.show{display:block}
+.cfg-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:block}
+.cfg-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.url-input,.key-input{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;font-family:'Space Mono',monospace;font-size:12px;
+  color:var(--text);outline:none;transition:border-color .2s}
+.url-input:focus,.key-input:focus{border-color:var(--col-tsr)}
+.key-input:focus{border-color:var(--col-meshy)}
+.url-input::placeholder,.key-input::placeholder{color:var(--muted)}
+.cfg-status{font-family:'Space Mono',monospace;font-size:10px;margin-top:6px}
+.cfg-status.ok {color:var(--success)}.cfg-status.err{color:var(--danger)}.cfg-status.chk{color:var(--muted)}
+.cfg-note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px}
+.cfg-note a{color:var(--col-meshy);text-decoration:none}
+.cfg-note a:hover{text-decoration:underline}
+.balance-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:100px;
+  background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.25);
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--col-meshy);margin-top:8px}
+
+/* Main layout */
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;
+  opacity:0;animation:up .6s ease .45s forwards}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+
+/* Panel */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.ph{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%}
+.dr{background:#ef4444}.dy{background:#f59e0b}.dg{background:#10b981}
+.ph-right{margin-left:auto;font-size:9px;color:var(--dim);letter-spacing:.06em}
+
+/* Drop zone */
+.drop{margin:20px;border:2px dashed rgba(0,229,255,0.16);border-radius:12px;
+  padding:40px 18px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(0,229,255,0.012)}
+.drop:hover,.drop.over{border-color:var(--accent);background:rgba(0,229,255,0.04)}
+.drop-icon{width:52px;height:52px;margin:0 auto 14px;background:rgba(0,229,255,0.07);
+  border-radius:12px;display:grid;place-items:center;border:1px solid rgba(0,229,255,0.16)}
+.drop h3{font-size:16px;font-weight:700;margin-bottom:5px}
+.drop p{color:var(--muted);font-size:12px}
+.browse{color:var(--accent);text-decoration:underline;cursor:pointer}
+#fi{display:none}
+
+/* Preview */
+.prev-wrap{display:none;margin:0 20px;border-radius:10px;overflow:hidden;
+  position:relative;border:1px solid var(--border)}
+.prev-wrap img{width:100%;max-height:220px;object-fit:contain;background:#0c0c18;display:block}
+.pbadge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  border:1px solid var(--border);padding:3px 9px;border-radius:100px;
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--accent)}
+.pclear{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  border:1px solid var(--border);width:26px;height:26px;border-radius:50%;display:grid;
+  place-items:center;cursor:pointer;transition:.2s;color:var(--muted)}
+.pclear:hover{background:rgba(239,68,68,.2);color:var(--danger);border-color:var(--danger)}
+
+/* Options */
+.opts{padding:16px 20px}
+.olabel{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:7px;display:block}
+.fmts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:14px}
+.fb{padding:8px 4px;border:1px solid var(--border);border-radius:7px;background:var(--surface);
+  color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;font-weight:700;
+  cursor:pointer;transition:.2s;text-align:center}
+.fb:hover{border-color:rgba(0,229,255,.3);color:var(--text)}
+.fb.on{border-color:var(--accent);background:rgba(0,229,255,.09);color:var(--accent)}
+.fhint{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:14px;min-height:13px}
+
+/* Advanced opts accordion */
+.adv-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);
+  letter-spacing:.08em;text-transform:uppercase;padding:8px 0;border-top:1px solid var(--border)}
+.adv-toggle svg{transition:transform .2s}
+.adv-toggle.open svg{transform:rotate(90deg)}
+.adv-body{display:none;padding-top:12px}
+.adv-body.open{display:block}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.toggle-left .tl{font-size:13px;color:var(--text)}.toggle-left .ts{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);display:block;margin-top:2px}
+.tog{position:relative;width:38px;height:21px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tslide{position:absolute;inset:0;background:var(--dim);border-radius:100px;cursor:pointer;transition:.3s}
+.tslide::before{content:'';position:absolute;width:15px;height:15px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.3s}
+input:checked+.tslide{background:var(--accent2)}
+input:checked+.tslide::before{transform:translateX(17px)}
+.srow{display:flex;align-items:center;gap:10px;margin-top:8px}
+input[type=range]{-webkit-appearance:none;flex:1;height:3px;background:var(--surface);border-radius:2px;outline:none;border:1px solid var(--border)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 7px rgba(0,229,255,.3)}
+.sv{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);min-width:28px;text-align:right}
+
+/* Meshy-specific options */
+.meshy-opts{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.meshy-opts.show{display:block}
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.model-btn{padding:9px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);
+  cursor:pointer;transition:.2s;text-align:left}
+.model-btn:hover{border-color:rgba(251,146,60,.3)}
+.model-btn.on{border-color:var(--col-meshy);background:rgba(251,146,60,.08)}
+.model-btn .mn{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px}
+.model-btn.on .mn{color:var(--col-meshy)}
+.model-btn .ms{font-size:11px;color:var(--muted)}
+
+/* Convert button */
+.brow{padding:0 20px 20px}
+.cvt{width:100%;padding:15px;border:none;border-radius:11px;
+  background:linear-gradient(135deg,var(--accent),#0099cc);
+  color:#000;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;
+  letter-spacing:.06em;cursor:pointer;transition:all .3s;text-transform:uppercase;position:relative;overflow:hidden}
+.cvt::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.16),transparent);opacity:0;transition:.3s}
+.cvt:hover::before{opacity:1}
+.cvt:hover{transform:translateY(-1px);box-shadow:0 5px 24px rgba(0,229,255,.25)}
+.cvt:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.3);
+  border-top-color:#000;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:5px}
+
+/* Progress */
+.prog-wrap{display:none;padding:0 20px 20px}
+.pbg{height:3px;background:var(--surface);border-radius:2px;overflow:hidden;margin-bottom:7px}
+.pfill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;width:0%;transition:width .45s ease}
+.plabel{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
+.pstep{color:var(--accent)}
+
+/* Error */
+.err{display:none;margin:0 20px 20px;padding:12px 16px;
+  background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.22);
+  border-radius:9px;font-family:'Space Mono',monospace;font-size:11px;color:var(--danger);white-space:pre-wrap;line-height:1.6}
+
+/* Viewer */
+.viewer-body{position:relative;min-height:380px;background:#0a0a16}
+#vc{width:100%;height:100%;display:block}
+.vempty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;text-align:center;padding:20px}
+.vicon{font-size:36px;opacity:.35}
+.vctrl{padding:10px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.hint{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim)}
+.vbtn{background:var(--surface);border:1px solid var(--border);color:var(--muted);
+  padding:4px 10px;border-radius:5px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;transition:.2s}
+.vbtn:hover{border-color:var(--border2);color:var(--text)}
+
+/* Stats + download */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;padding:12px 20px 0}
+.sb{background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.16);border-radius:9px;padding:10px;text-align:center}
+.sv2{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--text);display:block}
+.sl{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:.05em;text-transform:uppercase}
+.dlbtn{display:block;margin:12px 20px 18px;padding:11px;border:1.5px solid var(--success);
+  border-radius:9px;background:rgba(16,185,129,.07);color:var(--success);font-family:'Syne',sans-serif;
+  font-weight:700;font-size:13px;cursor:pointer;transition:.2s;letter-spacing:.06em;text-transform:uppercase;text-align:center}
+.dlbtn:hover{background:rgba(16,185,129,.15)}
+.thumb-preview{margin:10px 20px 0;border-radius:8px;overflow:hidden;border:1px solid var(--border);display:none}
+.thumb-preview img{width:100%;display:block;max-height:120px;object-fit:cover}
+
+/* Comparison table */
+.cmp{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;margin-bottom:18px;opacity:0;animation:up .6s ease .55s forwards}
+.crow{display:grid;grid-template-columns:140px 1fr 1fr 1fr;padding:11px 18px;border-bottom:1px solid var(--border);font-size:12px;align-items:center}
+.crow:last-child{border-bottom:none}
+.crow.hdr{background:var(--surface);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.c-js{color:var(--col-js)}.c-tsr{color:var(--col-tsr)}.c-msh{color:var(--col-meshy)}
+.chk{color:var(--success)}.crs{color:var(--danger)}
+
+footer{border-top:1px solid var(--border);padding:18px 0;text-align:center;
+  font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:14px}
+footer a{color:var(--accent);text-decoration:none}
+
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:640px){
+  .engine-selector{grid-template-columns:1fr}
+  .fmts{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .crow{grid-template-columns:100px 1fr 1fr 1fr;font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div>
+<div class="wrap">
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none">
+        <path d="M10 2L18 16L2 16Z" stroke="#00e5ff" stroke-width="1.5" fill="rgba(0,229,255,0.15)"/>
+        <path d="M10 7L15 16L5 16Z" fill="rgba(0,229,255,0.3)"/>
+      </svg>
+    </div>
+    <span class="logo-text">DEPTH<span>3D</span></span>
+  </div>
+  <div class="status-pill"><span class="sdot" id="sdot"></span><span id="stxt">—</span></div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <p class="eyebrow">▸ Three engines · Zero compromise</p>
+  <h1>Image to 3D,<span class="grad">your way.</span></h1>
+  <p>Run in your browser instantly, use a local AI model without cloning anything, or call a free cloud API — all from one interface.</p>
+</section>
+
+<!-- Engine selector -->
+<div class="engine-selector" id="eng-sel">
+
+  <div class="eng active-js" data-eng="js" onclick="setEngine('js')">
+    <div class="eng-check"></div>
+    <div class="eng-head"><span class="eng-icon">⚡</span><span class="eng-tag tag-js">BROWSER</span></div>
+    <div class="eng-name">JavaScript</div>
+    <div class="eng-desc">Depth-relief 3D, runs entirely in your browser. Zero install, zero latency, works offline.</div>
+    <div class="eng-pros"><span class="pro">No setup</span><span class="pro">Offline</span><span class="pro">Instant</span></div>
+  </div>
+
+  <div class="eng" data-eng="tsr" onclick="setEngine('tsr')">
+    <div class="eng-check"></div>
+    <div class="eng-head"><span class="eng-icon">🧠</span><span class="eng-tag tag-tsr">LOCAL AI</span></div>
+    <div class="eng-name">TripoSR</div>
+    <div class="eng-desc">True AI reconstruction. <code style="font-size:11px;color:var(--col-tsr)">pip install</code> only — no git clone, no manual setup.</div>
+    <div class="eng-pros"><span class="pro">True 3D</span><span class="pro">Open source</span><span class="pro">GPU/CPU</span></div>
+  </div>
+
+  <div class="eng" data-eng="msh" onclick="setEngine('msh')">
+    <div class="eng-check"></div>
+    <div class="eng-head"><span class="eng-icon">☁️</span><span class="eng-tag tag-msh">CLOUD API</span></div>
+    <div class="eng-name">Meshy AI</div>
+    <div class="eng-desc">Free-tier cloud API. No GPU, no Python required — just a free API key from meshy.ai.</div>
+    <div class="eng-pros"><span class="pro tag-free" style="background:rgba(16,185,129,.12);color:var(--success)">Free tier</span><span class="pro">No GPU</span><span class="pro">Textured</span></div>
+  </div>
+</div>
+
+<!-- Engine-specific config -->
+<div class="eng-config" id="cfg-tsr">
+  <span class="cfg-label">TripoSR Server URL</span>
+  <div class="cfg-row">
+    <input class="url-input" id="tsr-url" type="text" value="http://localhost:7860" placeholder="http://localhost:7860">
+  </div>
+  <div class="cfg-status chk" id="tsr-status">Enter server URL — start with: python app_local.py</div>
+  <div class="cfg-note" style="margin-top:10px">
+    <strong>One-time setup (no git clone):</strong><br>
+    <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--col-tsr)">pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121</code><br>
+    <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--col-tsr)">pip install git+https://github.com/VAST-AI-Research/TripoSR.git flask pillow trimesh</code><br>
+    <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-size:11px;color:var(--col-tsr)">python app_local.py</code>
+  </div>
+</div>
+
+<div class="eng-config" id="cfg-msh">
+  <span class="cfg-label">Meshy API Key</span>
+  <div class="cfg-row">
+    <input class="key-input" id="msh-key" type="text" placeholder="msy_xxxxxxxxxxxx  (or leave blank for test mode)">
+  </div>
+  <div class="cfg-status chk" id="msh-status">Leave blank to use test mode (returns sample model, 0 credits)</div>
+  <div id="balance-wrap" style="display:none">
+    <div class="balance-pill">💳 <span id="balance-txt">— credits</span></div>
+  </div>
+  <div class="cfg-note">
+    Get a free key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a><br>
+    Free tier = CC BY 4.0 license · Paid plans from $20/mo for full ownership.
+    Run the proxy: <code style="font-size:11px;color:var(--col-meshy)">pip install flask requests && MESHY_API_KEY=msy_xxx python app_meshy.py</code>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div class="layout">
+
+  <!-- Left: Input + options -->
+  <div class="panel">
+    <div class="ph"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;input<span class="ph-right" id="eng-label">JS ENGINE</span></div>
+
+    <div class="drop" id="drop">
+      <input type="file" id="fi" accept="image/png,image/jpeg,image/webp">
+      <div class="drop-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+      </div>
+      <h3>Drop an image</h3>
+      <p>PNG · JPG · WEBP · or <span class="browse" id="br">browse</span></p>
+    </div>
+
+    <div class="prev-wrap" id="pw">
+      <img id="pi" src="" alt="">
+      <span class="pbadge" id="pb"></span>
+      <button class="pclear" id="pc">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 1l9 9M10 1L1 10"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="opts">
+      <span class="olabel">Export Format</span>
+      <div class="fmts" id="fmts">
+        <button class="fb on" data-fmt="glb">GLB</button>
+        <button class="fb" data-fmt="obj">OBJ</button>
+        <button class="fb" data-fmt="ply">PLY</button>
+        <button class="fb" data-fmt="stl">STL</button>
+      </div>
+      <div class="fhint" id="fhint">GLB — binary glTF, best for web & game engines</div>
+
+      <!-- Meshy model picker (shown only in Meshy mode) -->
+      <div class="meshy-opts" id="meshy-opts">
+        <span class="olabel">Meshy Model</span>
+        <div class="model-grid">
+          <button class="model-btn on" data-m="meshy-4">
+            <span class="mn">MESHY-4</span>
+            <span class="ms">5 credits · fast</span>
+          </button>
+          <button class="model-btn" data-m="meshy-6">
+            <span class="mn">MESHY-6</span>
+            <span class="ms">20 credits · best quality</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Advanced options -->
+      <div class="adv-toggle" id="adv-toggle" onclick="toggleAdv()">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M3 2l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Advanced options
+      </div>
+      <div class="adv-body" id="adv-body">
+        <div class="toggle-row" id="rembg-row">
+          <div class="toggle-left">
+            <span class="tl">Remove background</span>
+            <span class="ts">Isolates subject before inference</span>
+          </div>
+          <label class="tog"><input type="checkbox" id="rembg" checked><span class="tslide"></span></label>
+        </div>
+        <div id="tsr-adv" style="display:none">
+          <span class="olabel" style="margin-top:10px">Mesh threshold</span>
+          <div class="srow">
+            <input type="range" id="thresh" min="5" max="50" step="1" value="25">
+            <span class="sv" id="tv">25</span>
+          </div>
+          <div class="fhint" style="margin-top:4px">Lower = denser · Higher = cleaner</div>
+        </div>
+        <div id="meshy-adv" style="display:none">
+          <div class="toggle-row">
+            <div class="toggle-left">
+              <span class="tl">Generate texture</span>
+              <span class="ts">+10 credits · adds full colour texture</span>
+            </div>
+            <label class="tog"><input type="checkbox" id="dotex" checked><span class="tslide"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="brow">
+      <button class="cvt" id="cvt" disabled>Select an image to start</button>
+    </div>
+    <div class="prog-wrap" id="pgw">
+      <div class="pbg"><div class="pfill" id="pf"></div></div>
+      <div class="plabel"><span class="pstep" id="ps">…</span><span id="pp">0%</span></div>
+    </div>
+    <div class="err" id="er"></div>
+  </div>
+
+  <!-- Right: Viewer -->
+  <div class="panel" style="display:flex;flex-direction:column">
+    <div class="ph"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;output — 3D preview<span class="ph-right">WebGL</span></div>
+    <div class="viewer-body" id="vb">
+      <canvas id="vc"></canvas>
+      <div class="vempty" id="ve"><div class="vicon">⬡</div><div>3D model appears here</div><div style="font-size:9px;color:var(--dim);margin-top:3px">after conversion</div></div>
+    </div>
+    <div class="vctrl">
+      <span class="hint">Drag · Scroll · Right-drag</span>
+      <div style="display:flex;gap:6px">
+        <button class="vbtn" onclick="resetCam()">Reset</button>
+        <button class="vbtn" id="wirebtn" onclick="toggleWire()">Wireframe</button>
+      </div>
+    </div>
+    <div id="result-area" style="display:none">
+      <div class="thumb-preview" id="tp"><img id="ti" src="" alt=""></div>
+      <div class="stats-grid" id="sg"></div>
+      <button class="dlbtn" id="dlb" style="display:none">⬇ Download 3D File</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison table -->
+<div class="cmp">
+  <div class="ph"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;engine comparison</div>
+  <div class="crow hdr"><span></span><span class="c-js">⚡ JavaScript</span><span class="c-tsr">🧠 TripoSR</span><span class="c-msh">☁️ Meshy</span></div>
+  <div class="crow"><span style="color:var(--muted)">3D type</span><span>Depth relief</span><span>True AI mesh</span><span>True AI mesh</span></div>
+  <div class="crow"><span style="color:var(--muted)">Install</span><span><span class="chk">None</span></span><span>pip install (2 cmds)</span><span>pip install (1 cmd)</span></div>
+  <div class="crow"><span style="color:var(--muted)">GPU needed</span><span><span class="chk">No</span></span><span>Optional (faster)</span><span><span class="chk">No</span></span></div>
+  <div class="crow"><span style="color:var(--muted)">Cost</span><span><span class="chk">Free</span></span><span><span class="chk">Free</span></span><span>Free (200 cr/mo)</span></div>
+  <div class="crow"><span style="color:var(--muted)">Texture</span><span><span class="crs">No</span></span><span>Vertex colour</span><span><span class="chk">Full PBR</span></span></div>
+  <div class="crow"><span style="color:var(--muted)">Speed</span><span><span class="chk">Instant</span></span><span>1–90 s</span><span>30–90 s</span></div>
+  <div class="crow"><span style="color:var(--muted)">Privacy</span><span><span class="chk">Local</span></span><span><span class="chk">Local</span></span><span>Cloud upload</span></div>
+</div>
+
+<footer>DEPTH3D · JS + TripoSR + Meshy · <a href="https://docs.meshy.ai" target="_blank">Meshy docs</a> · <a href="https://github.com/VAST-AI-Research/TripoSR" target="_blank">TripoSR repo</a></footer>
+</div>
+
+<script type="module">
+// ═══════════════════════════════════ STATE ═══════════════════════
+const SERVERS = { tsr: 'http://localhost:7860', msh: 'http://localhost:7861' };
+const fmtHints = {
+  glb:'GLB — binary glTF, best for web & game engines',
+  obj:'OBJ — universal exchange, zipped with MTL',
+  ply:'PLY — binary mesh with vertex colors',
+  stl:'STL — geometry only, ideal for 3D printing',
+};
+let engine='js', selFile=null, selFmt='glb', selModel='meshy-4';
+let dlUrl=null, dlName=null, urlTimer=null, keyTimer=null;
+
+// ═══════════════════════════════════ ENGINE SELECT ════════════════
+window.setEngine = function(e) {
+  engine = e;
+  document.querySelectorAll('.eng').forEach(el => {
+    el.className = 'eng' + (el.dataset.eng===e ? ` active-${e}` : '');
+  });
+  document.getElementById('cfg-tsr').classList.toggle('show', e==='tsr');
+  document.getElementById('cfg-msh').classList.toggle('show', e==='msh');
+  document.getElementById('tsr-adv').style.display  = e==='tsr' ? 'block' : 'none';
+  document.getElementById('meshy-adv').style.display = e==='msh' ? 'block' : 'none';
+  document.getElementById('meshy-opts').classList.toggle('show', e==='msh');
+  document.getElementById('rembg-row').style.display = e==='msh' ? 'none' : 'flex';
+  const labels = {js:'JS ENGINE', tsr:'TRIPOSR', msh:'MESHY API'};
+  document.getElementById('eng-label').textContent = labels[e];
+
+  // format options — JS can do stl, others focus on glb/obj/ply/stl
+  const fmtBtns = document.querySelectorAll('.fb');
+  if (e==='msh') {
+    fmtBtns.forEach(b => { b.style.display = b.dataset.fmt==='ply' ? 'none' : ''; });
+  } else {
+    fmtBtns.forEach(b => { b.style.display = ''; });
+  }
+
+  updateStatus();
+  hideResults();
+};
+
+// ═══════════════════════════════════ SERVER STATUS ════════════════
+const sdot = document.getElementById('sdot');
+const stxt = document.getElementById('stxt');
+
+function setStat(cls, txt) { sdot.className='sdot '+cls; stxt.textContent=txt; }
+
+async function updateStatus() {
+  if (engine==='js') { setStat('on', 'JS engine · ready'); return; }
+  const url = engine==='tsr'
+    ? document.getElementById('tsr-url').value.trim().replace(/\/$/,'')
+    : 'http://localhost:7861';
+  setStat('loading', 'Connecting…');
+  try {
+    const key = document.getElementById('msh-key')?.value?.trim() || '';
+    const q   = engine==='msh' && key ? `?key=${encodeURIComponent(key)}` : '';
+    const r   = await fetch(`${url}/health${q}`, {signal:AbortSignal.timeout(5000)});
+    const d   = await r.json();
+    if (engine==='tsr') {
+      if (d.model_loading) setStat('loading', 'Model loading…');
+      else if (d.model_loaded) setStat('on', `TripoSR ready · ${(d.device||'cpu').toUpperCase()}`);
+      else setStat('off', d.error||'Model not loaded');
+      document.getElementById('tsr-status').className='cfg-status '+(d.model_loaded?'ok':'chk');
+      document.getElementById('tsr-status').textContent = d.model_loaded
+        ? '✓ Server connected and model ready'
+        : d.model_loading ? '⟳ Model loading (first run downloads ~2 GB)…'
+        : (d.error || 'Connected, model not yet loaded');
+    } else {
+      const bal = d.balance;
+      setStat('on', d.test_mode ? 'Meshy · test mode (0 credits)' : `Meshy · ${bal?.balance ?? '?'} credits`);
+      document.getElementById('msh-status').className='cfg-status ok';
+      document.getElementById('msh-status').textContent = d.test_mode
+        ? '✓ Test mode — returns sample model, uses 0 credits'
+        : `✓ Connected · ${bal?.balance ?? '?'} credits remaining`;
+      if (bal?.balance !== undefined) {
+        document.getElementById('balance-wrap').style.display='block';
+        document.getElementById('balance-txt').textContent = bal.balance + ' credits';
+      }
+    }
+  } catch {
+    setStat('off', `${engine==='tsr'?'TripoSR':'Meshy'} server offline`);
+    const sid = engine==='tsr' ? 'tsr-status' : 'msh-status';
+    document.getElementById(sid).className='cfg-status err';
+    document.getElementById(sid).textContent = engine==='tsr'
+      ? '✗ Cannot reach server — run: python app_local.py'
+      : '✗ Cannot reach proxy — run: python app_meshy.py';
+  }
+}
+updateStatus();
+setInterval(updateStatus, 10000);
+
+// Debounced URL/key checks
+document.getElementById('tsr-url')?.addEventListener('input', () => {
+  clearTimeout(urlTimer); urlTimer = setTimeout(updateStatus, 800);
+});
+document.getElementById('msh-key')?.addEventListener('input', () => {
+  clearTimeout(keyTimer); keyTimer = setTimeout(updateStatus, 800);
+});
+
+// ═══════════════════════════════════ FORMAT BTNS ══════════════════
+document.getElementById('fmts').addEventListener('click', e => {
+  const b=e.target.closest('.fb'); if(!b) return;
+  document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); selFmt=b.dataset.fmt;
+  document.getElementById('fhint').textContent=fmtHints[selFmt];
+});
+
+document.querySelectorAll('.model-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.model-btn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); selModel=b.dataset.m;
+}));
+
+window.toggleAdv = function() {
+  const t=document.getElementById('adv-toggle'), bd=document.getElementById('adv-body');
+  t.classList.toggle('open'); bd.classList.toggle('open');
+};
+
+document.getElementById('thresh')?.addEventListener('input', e => {
+  document.getElementById('tv').textContent=e.target.value;
+});
+
+// ═══════════════════════════════════ FILE ════════════════════════
+const drop=document.getElementById('drop'), fi=document.getElementById('fi');
+document.getElementById('br').addEventListener('click',()=>fi.click());
+drop.addEventListener('click',e=>{if(!e.target.classList.contains('browse'))fi.click()});
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))loadFile(f)});
+fi.addEventListener('change',()=>{if(fi.files[0])loadFile(fi.files[0])});
+document.getElementById('pc').addEventListener('click',clearFile);
+
+function loadFile(f){
+  selFile=f;
+  document.getElementById('pi').src=URL.createObjectURL(f);
+  document.getElementById('pb').textContent=f.name.split('.').pop().toUpperCase()+' · '+sz(f.size);
+  document.getElementById('pw').style.display='block';
+  drop.style.display='none';
+  document.getElementById('cvt').disabled=false;
+  document.getElementById('cvt').textContent='Generate 3D ↗';
+  hideResults();
+}
+function clearFile(){
+  selFile=null;document.getElementById('pw').style.display='none';drop.style.display='';
+  document.getElementById('cvt').disabled=true;document.getElementById('cvt').textContent='Select an image to start';
+  hideResults();fi.value='';
+}
+function sz(b){return b<1048576?(b/1024|0)+' KB':(b/1048576).toFixed(1)+' MB'}
+function hideResults(){
+  document.getElementById('er').style.display='none';
+  document.getElementById('pgw').style.display='none';
+  document.getElementById('result-area').style.display='none';
+}
+function showErr(m){const el=document.getElementById('er');el.style.display='block';el.textContent='⚠ '+m;}
+function setProgress(pct,step){
+  document.getElementById('pf').style.width=pct+'%';
+  document.getElementById('pp').textContent=pct+'%';
+  document.getElementById('ps').textContent=step;
+}
+
+// ═══════════════════════════════════ CONVERT ═════════════════════
+document.getElementById('cvt').addEventListener('click',async()=>{
+  if(!selFile) return;
+  hideResults();
+  document.getElementById('pgw').style.display='block';
+  setProgress(0,'Starting…');
+  document.getElementById('cvt').disabled=true;
+  document.getElementById('cvt').innerHTML='<span class="spin"></span>Processing…';
+
+  try {
+    let result;
+    if (engine==='js')       result = await runJS();
+    else if (engine==='tsr') result = await runTSR();
+    else                     result = await runMeshy();
+
+    setProgress(100,'Done ✓');
+
+    if(dlUrl) URL.revokeObjectURL(dlUrl);
+    dlUrl  = URL.createObjectURL(new Blob([result.data],{type:result.mime}));
+    dlName = result.filename;
+
+    // Show stats
+    let statsHTML = '';
+    if(result.vertices) statsHTML += `<div class="sb"><span class="sv2">${result.vertices.toLocaleString()}</span><span class="sl">Vertices</span></div>`;
+    if(result.faces)    statsHTML += `<div class="sb"><span class="sv2">${result.faces.toLocaleString()}</span><span class="sl">Triangles</span></div>`;
+    if(result.elapsed)  statsHTML += `<div class="sb"><span class="sv2">${result.elapsed}s</span><span class="sl">Time</span></div>`;
+    statsHTML += `<div class="sb"><span class="sv2">${selFmt.toUpperCase()}</span><span class="sl">Format</span></div>`;
+    document.getElementById('sg').innerHTML=statsHTML;
+
+    document.getElementById('result-area').style.display='block';
+    const dlb=document.getElementById('dlb');
+    dlb.style.display='block';
+    dlb.onclick=()=>{const a=document.createElement('a');a.href=dlUrl;a.download=dlName;a.click()};
+
+    // Thumbnail (Meshy)
+    if(result.thumbnail){
+      document.getElementById('ti').src=result.thumbnail;
+      document.getElementById('tp').style.display='block';
+    }
+
+    // 3D preview (GLB only)
+    if(selFmt==='glb' && engine!=='js') {
+      await loadGLB(new Blob([result.data],{type:'model/gltf-binary'}));
+    } else if(engine==='js') {
+      document.getElementById('ve').innerHTML='<div class="vicon">✓</div><div>Relief map generated</div><div style="font-size:9px;color:var(--dim);margin-top:3px">JS engine produces depth-relief, not full 3D</div>';
+    }
+
+    setTimeout(()=>document.getElementById('pgw').style.display='none',1500);
+  } catch(e){
+    document.getElementById('pgw').style.display='none';
+    showErr(e.message);
+  } finally {
+    document.getElementById('cvt').disabled=false;
+    document.getElementById('cvt').textContent='Generate 3D ↗';
+  }
+});
+
+// ═══════════════════════════════════ JS ENGINE ════════════════════
+async function runJS(){
+  const steps=[['Loading…',10,80],['Depth map…',35,300],['Building mesh…',65,500],['Exporting…',90,300]];
+  let i=0;
+  await new Promise(res=>{
+    function n(){
+      if(i>=steps.length){res();return}
+      const[s,p,d]=steps[i++];setTimeout(()=>{setProgress(p,s);n()},d);
+    }n();
+  });
+
+  const img=await loadImg(selFile);
+  const MAX=512;let{w,h}=scaleDims(img.width,img.height,MAX);
+  const can=document.createElement('canvas');can.width=w;can.height=h;
+  const ctx=can.getContext('2d');ctx.drawImage(img,0,0,w,h);
+  const px=ctx.getImageData(0,0,w,h).data;
+  const lum=new Float32Array(w*h);
+  for(let j=0;j<w*h;j++) lum[j]=(0.299*px[j*4]+0.587*px[j*4+1]+0.114*px[j*4+2])/255;
+  function blur(a,W,H,r){const t=new Float32Array(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let s=0,n=0;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const nx=x+dx,ny=y+dy;if(nx>=0&&nx<W&&ny>=0&&ny<H){s+=a[ny*W+nx];n++;}}t[y*W+x]=s/n;}return t;}
+  const sm=blur(lum,w,h,3);const ed=new Float32Array(w*h);let em=0;
+  const bl=blur(lum,w,h,1);for(let j=0;j<w*h;j++){ed[j]=Math.abs(lum[j]-bl[j]);if(ed[j]>em)em=ed[j];}
+  const dep=new Float32Array(w*h);let dn=Infinity,dx=-Infinity;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const j=y*w+x,yg=.2+.6*(y/(h-1));dep[j]=.4*sm[j]+.3*(1-ed[j]/(em+1e-8))+.3*yg;if(dep[j]<dn)dn=dep[j];if(dep[j]>dx)dx=dep[j];}
+  const dr=dx-dn+1e-8;for(let j=0;j<w*h;j++)dep[j]=(dep[j]-dn)/dr;
+  const sub={low:4,medium:2,high:1}['medium'];
+  const ys=[],xs2=[];for(let y=0;y<h;y+=sub)ys.push(y);for(let x=0;x<w;x+=sub)xs2.push(x);
+  const sh=ys.length,sw=xs2.length,nv=sh*sw;
+  const scZ=0.4;const verts=new Float32Array(nv*3);const cols=new Uint8Array(nv*3);
+  for(let r=0;r<sh;r++)for(let c=0;c<sw;c++){const vi=r*sw+c,px2=xs2[c],py=ys[r],pi=py*w+px2;
+    verts[vi*3]=(px2/(w-1))*2-1;verts[vi*3+1]=-((py/(h-1))*2-1);verts[vi*3+2]=dep[pi]*scZ;
+    cols[vi*3]=px[pi*4];cols[vi*3+1]=px[pi*4+1];cols[vi*3+2]=px[pi*4+2];}
+  const faces=[];const id=(r,c)=>r*sw+c;
+  for(let r=0;r<sh-1;r++)for(let c=0;c<sw-1;c++){const a=id(r,c),b=id(r,c+1),cc=id(r+1,c),d=id(r+1,c+1);faces.push(a,b,cc,b,d,cc);}
+  const fi2=new Int32Array(faces);const nf=fi2.length/3;
+  let data;
+  if(selFmt==='ply') data=makePLY(verts,cols,fi2,nv,nf);
+  else if(selFmt==='obj') data=makeOBJ(verts,cols,fi2,nv);
+  else if(selFmt==='stl') data=makeSTL(verts,fi2,nf);
+  else data=makeGLTF(verts,cols,fi2,nv);
+  const extMap={ply:'.ply',obj:'_obj.zip',stl:'.stl',glb:'.glb',gltf:'_gltf.zip'};
+  const mimeMap={ply:'application/octet-stream',obj:'application/zip',stl:'application/octet-stream',glb:'model/gltf-binary',gltf:'application/zip'};
+  return {data,mime:mimeMap[selFmt]||'application/octet-stream',filename:`relief_js${extMap[selFmt]||'.bin'}`,vertices:nv,faces:nf,elapsed:'<1'};
+}
+
+// ═══════════════════════════════════ TRIPOSR ENGINE ═══════════════
+async function runTSR(){
+  const base=document.getElementById('tsr-url').value.trim().replace(/\/$/,'');
+  const fd=new FormData();
+  fd.append('image',selFile); fd.append('format',selFmt);
+  fd.append('remove_bg',document.getElementById('rembg').checked?'true':'false');
+  fd.append('mc_threshold',document.getElementById('thresh').value);
+
+  const poll=setInterval(()=>{
+    fetch(`${base}/health`).then(r=>r.json()).then(d=>{
+      if(d.model_loading)setProgress(20,'Model loading on server…');
+      else setProgress(40,'Running TripoSR inference…');
+    }).catch(()=>{});
+  },3000);
+
+  setProgress(10,'Uploading to TripoSR server…');
+  try {
+    const resp=await fetch(`${base}/convert`,{method:'POST',body:fd});
+    clearInterval(poll);
+    if(!resp.ok){const e=await resp.json().catch(()=>({error:'Server error'}));throw new Error(e.error||`HTTP ${resp.status}`);}
+    const blob=await resp.blob();
+    const stats=JSON.parse(resp.headers.get('X-Mesh-Stats')||'{}');
+    const elapsed=resp.headers.get('X-Processing-Time')||'?';
+    const cd=resp.headers.get('Content-Disposition')||'';
+    const m=cd.match(/filename="?([^"]+)"?/);
+    return {data:new Uint8Array(await blob.arrayBuffer()),mime:blob.type,filename:m?m[1]:`model.${selFmt}`,
+            vertices:stats.vertices,faces:stats.faces,elapsed};
+  } catch(e){clearInterval(poll);throw e;}
+}
+
+// ═══════════════════════════════════ MESHY ENGINE ═════════════════
+async function runMeshy(){
+  const base='http://localhost:7861';
+  const fd=new FormData();
+  const key=document.getElementById('msh-key').value.trim();
+  fd.append('image',selFile); fd.append('format',selFmt);
+  fd.append('ai_model',selModel);
+  fd.append('texture',document.getElementById('dotex').checked?'true':'false');
+  if(key) fd.append('api_key',key);
+
+  let pct=10;
+  setProgress(pct,'Submitting to Meshy…');
+  const tick=setInterval(()=>{pct=Math.min(pct+4,85);setProgress(pct,'Waiting for Meshy…');},5000);
+
+  try {
+    const resp=await fetch(`${base}/convert`,{method:'POST',body:fd});
+    clearInterval(tick);
+    if(!resp.ok){const e=await resp.json().catch(()=>({error:'Server error'}));throw new Error(e.error||`HTTP ${resp.status}`);}
+    const blob=await resp.blob();
+    const stats=JSON.parse(resp.headers.get('X-Mesh-Stats')||'{}');
+    const elapsed=resp.headers.get('X-Processing-Time')||'?';
+    const cd=resp.headers.get('Content-Disposition')||'';
+    const m=cd.match(/filename="?([^"]+)"?/);
+    return {data:new Uint8Array(await blob.arrayBuffer()),mime:blob.type,filename:m?m[1]:`meshy.${selFmt}`,
+            elapsed,thumbnail:stats.thumbnail};
+  } catch(e){clearInterval(tick);throw e;}
+}
+
+// ═══════════════════════════════════ JS EXPORTERS ════════════════
+function loadImg(f){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(f);})}
+function scaleDims(w,h,max){if(Math.max(w,h)<=max)return{w,h};const s=max/Math.max(w,h);return{w:Math.round(w*s),h:Math.round(h*s)};}
+function makePLY(v,c,f,nv,nf){
+  const hdr=`ply\nformat binary_little_endian 1.0\nelement vertex ${nv}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face ${nf}\nproperty list uchar int vertex_indices\nend_header\n`;
+  const hb=new TextEncoder().encode(hdr);
+  const buf=new ArrayBuffer(hb.length+nv*(12+3)+nf*(1+12));
+  const dv=new DataView(buf);new Uint8Array(buf).set(hb,0);let o=hb.length;
+  for(let i=0;i<nv;i++){dv.setFloat32(o,v[i*3],true);o+=4;dv.setFloat32(o,v[i*3+1],true);o+=4;dv.setFloat32(o,v[i*3+2],true);o+=4;dv.setUint8(o++,c[i*3]);dv.setUint8(o++,c[i*3+1]);dv.setUint8(o++,c[i*3+2]);}
+  for(let i=0;i<nf;i++){dv.setUint8(o++,3);dv.setInt32(o,f[i*3],true);o+=4;dv.setInt32(o,f[i*3+1],true);o+=4;dv.setInt32(o,f[i*3+2],true);o+=4;}
+  return new Uint8Array(buf);
+}
+function makeSTL(v,f,nf){
+  const buf=new ArrayBuffer(84+nf*50);const dv=new DataView(buf);dv.setUint32(80,nf,true);let o=84;
+  for(let i=0;i<nf;i++){const ai=f[i*3],bi=f[i*3+1],ci=f[i*3+2];
+    const ax=v[ai*3],ay=v[ai*3+1],az=v[ai*3+2],bx=v[bi*3],by=v[bi*3+1],bz=v[bi*3+2],cx=v[ci*3],cy=v[ci*3+1],cz=v[ci*3+2];
+    let nx=(ay-cy)*(bz-az)-(az-cz)*(by-ay),ny=(az-cz)*(bx-ax)-(ax-cx)*(bz-az),nz=(ax-cx)*(by-ay)-(ay-cy)*(bx-ax);
+    const ln=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;nx/=ln;ny/=ln;nz/=ln;
+    dv.setFloat32(o,nx,true);o+=4;dv.setFloat32(o,ny,true);o+=4;dv.setFloat32(o,nz,true);o+=4;
+    [ax,ay,az,bx,by,bz,cx,cy,cz].forEach(n=>{dv.setFloat32(o,n,true);o+=4;});o+=2;}
+  return new Uint8Array(buf);
+}
+function makeOBJ(v,c,f,nv){
+  const enc=new TextEncoder();const lines=['# depth3d-js',''];
+  for(let i=0;i<nv;i++)lines.push(`v ${v[i*3].toFixed(5)} ${v[i*3+1].toFixed(5)} ${v[i*3+2].toFixed(5)} ${(c[i*3]/255).toFixed(4)} ${(c[i*3+1]/255).toFixed(4)} ${(c[i*3+2]/255).toFixed(4)}`);
+  lines.push('');const nf=f.length/3;for(let i=0;i<nf;i++)lines.push(`f ${f[i*3]+1} ${f[i*3+1]+1} ${f[i*3+2]+1}`);
+  return buildZip([{name:'model.obj',data:enc.encode(lines.join('\n'))}]);
+}
+function makeGLTF(v,c,f,nv){
+  function pad(b){const e=(-b.length%4+4)%4;const r=new Uint8Array(b.length+e);r.set(b);return r;}
+  const vb=pad(new Uint8Array(v.buffer));const vl=vb.length;
+  const cf=new Float32Array(c.length);for(let i=0;i<c.length;i++)cf[i]=c[i]/255;
+  const cb=pad(new Uint8Array(cf.buffer));const cl=cb.length;
+  const fi=new Uint32Array(f.length);for(let i=0;i<f.length;i++)fi[i]=f[i];
+  const fb=pad(new Uint8Array(fi.buffer));const fl=fb.length;
+  const bin=new Uint8Array(vl+cl+fl);bin.set(vb);bin.set(cb,vl);bin.set(fb,vl+cl);
+  let mn=[Infinity,Infinity,Infinity],mx=[-Infinity,-Infinity,-Infinity];
+  for(let i=0;i<nv;i++)for(let j=0;j<3;j++){if(v[i*3+j]<mn[j])mn[j]=v[i*3+j];if(v[i*3+j]>mx[j])mx[j]=v[i*3+j];}
+  const g={asset:{version:'2.0',generator:'depth3d-js'},scene:0,scenes:[{nodes:[0]}],nodes:[{mesh:0}],
+    meshes:[{name:'relief',primitives:[{attributes:{POSITION:0,COLOR_0:1},indices:2,mode:4}]}],
+    accessors:[{bufferView:0,componentType:5126,count:nv,type:'VEC3',min:Array.from(mn),max:Array.from(mx)},
+      {bufferView:1,componentType:5126,count:nv,type:'VEC3'},{bufferView:2,componentType:5125,count:f.length,type:'SCALAR'}],
+    bufferViews:[{buffer:0,byteOffset:0,byteLength:vl,target:34962},{buffer:0,byteOffset:vl,byteLength:cl,target:34962},{buffer:0,byteOffset:vl+cl,byteLength:fl,target:34963}],
+    buffers:[{byteLength:bin.length,uri:'model.bin'}]};
+  return buildZip([{name:'model.gltf',data:new TextEncoder().encode(JSON.stringify(g,null,2))},{name:'model.bin',data:bin}]);
+}
+
+// Minimal ZIP builder
+function buildZip(files){
+  const enc=new TextEncoder();const entries=[];let off=0;
+  for(const f of files){const nb=enc.encode(f.name);const d=typeof f.data==='string'?enc.encode(f.data):f.data;entries.push({nb,d,off});off+=30+nb.length+d.length;}
+  const cdS=entries.reduce((s,e)=>s+46+e.nb.length,0);const tot=off+cdS+22;
+  const buf=new Uint8Array(tot);const dv=new DataView(buf.buffer);let o=0;
+  for(const e of entries){const cr=crc32(e.d);dv.setUint32(o,0x04034b50,true);o+=4;dv.setUint16(o,20,true);o+=2;dv.setUint16(o,0,true);o+=2;dv.setUint16(o,0,true);o+=2;dv.setUint16(o,0,true);o+=2;dv.setUint16(o,0,true);o+=2;dv.setUint32(o,cr,true);o+=4;dv.setUint32(o,e.d.length,true);o+=4;dv.setUint32(o,e.d.length,true);o+=4;dv.setUint16(o,e.nb.length,true);o+=2;dv.setUint16(o,0,true);o+=2;buf.set(e.nb,o);o+=e.nb.length;buf.set(e.d,o);o+=e.d.length;}
+  const cs=o;for(const e of entries){const cr=crc32(e.d);dv.setUint32(o,0x02014b50,true);o+=4;dv.setUint16(o,20,true);o+=2;dv.setUint16(o,20,true);o+=2;[0,0,0,0,0,0].forEach(v=>{dv.setUint16(o,v,true);o+=2;});dv.setUint32(o,cr,true);o+=4;dv.setUint32(o,e.d.length,true);o+=4;dv.setUint32(o,e.d.length,true);o+=4;dv.setUint16(o,e.nb.length,true);o+=2;[0,0,0,0].forEach(v=>{dv.setUint16(o,v,true);o+=2;});dv.setUint32(o,0,true);o+=4;dv.setUint32(o,e.off,true);o+=4;buf.set(e.nb,o);o+=e.nb.length;}
+  dv.setUint32(o,0x06054b50,true);o+=4;[0,0,entries.length,entries.length].forEach(v=>{dv.setUint16(o,v,true);o+=2;});dv.setUint32(o,cdS,true);o+=4;dv.setUint32(o,cs,true);o+=4;dv.setUint16(o,0,true);
+  return buf;
+}
+let _crc=null;
+function crc32(d){if(!_crc){_crc=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);_crc[n]=c;}}let c=0xFFFFFFFF;for(let i=0;i<d.length;i++)c=_crc[(c^d[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+
+// ═══════════════════════════════════ THREE.JS VIEWER ══════════════
+let scene, camera, renderer, mesh3d;
+let rotX=0, rotY=0, panX=0, panY=0, zoom=2.5;
+let isDrag=false, isRmb=false, lx=0, ly=0;
+
+async function initViewer(){
+  const THREE=await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js');
+  window._THREE=THREE;
+  const canvas=document.getElementById('vc'), body=document.getElementById('vb');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setClearColor(0x0a0a16,1);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,1,0.01,100);
+  camera.position.set(0,0.3,2.5);
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const dl=new THREE.DirectionalLight(0xffffff,1.2);dl.position.set(2,4,3);scene.add(dl);
+  function resize(){const w=body.clientWidth,h=Math.max(body.clientHeight,380);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+  resize();new ResizeObserver(resize).observe(body);
+
+  canvas.addEventListener('mousedown',e=>{if(e.button===2)isRmb=true;else isDrag=true;lx=e.clientX;ly=e.clientY;});
+  window.addEventListener('mouseup',()=>{isDrag=isRmb=false;});
+  window.addEventListener('mousemove',e=>{
+    const dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;
+    if(isDrag){rotY+=dx*.006;rotX+=dy*.006;}
+    if(isRmb){panX+=dx*.003;panY-=dy*.003;}
+  });
+  canvas.addEventListener('wheel',e=>{zoom=Math.max(.5,Math.min(20,zoom+e.deltaY*.005));},{passive:true});
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+  (function animate(){requestAnimationFrame(animate);
+    if(mesh3d){mesh3d.rotation.x=rotX;mesh3d.rotation.y=rotY+Date.now()*.0004;mesh3d.position.set(panX,panY,0);camera.position.z=zoom;}
+    renderer.render(scene,camera);
+  })();
+}
+initViewer();
+
+async function loadGLB(blob){
+  const { GLTFLoader } = await import('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/loaders/GLTFLoader.js').catch(()=>({GLTFLoader:null}));
+  if(!GLTFLoader){document.getElementById('ve').innerHTML='<div class="vicon">✓</div><div>Download to view in Blender</div>';return;}
+  if(mesh3d&&scene){scene.remove(mesh3d);mesh3d.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});mesh3d=null;}
+  const url=URL.createObjectURL(blob);
+  new GLTFLoader().load(url,gltf=>{mesh3d=gltf.scene;scene.add(mesh3d);document.getElementById('ve').style.display='none';URL.revokeObjectURL(url);},
+    undefined,()=>{document.getElementById('ve').innerHTML='<div class="vicon">✓</div><div>Download to open in Blender</div>';});
+}
+
+window.resetCam=()=>{rotX=rotY=panX=panY=0;zoom=2.5;};
+window.toggleWire=()=>{
+  if(!mesh3d)return;
+  const btn=document.getElementById('wirebtn');
+  mesh3d.traverse(c=>{if(c.isMesh)c.material.wireframe=!c.material.wireframe;});
+  btn.textContent=btn.textContent==='Wireframe'?'Solid':'Wireframe';
+};
+</script>
+</body>
+</html>
