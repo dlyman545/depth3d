@@ -328,29 +328,21 @@ footer a{color:var(--accent);text-decoration:none}
 </div>
 
 <div class="eng-config" id="cfg-msh">
-  <span class="cfg-label">Proxy URL <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(shared Railway deployment)</span></span>
-  <div class="cfg-row">
-    <input class="url-input" id="msh-url" type="text"
-      placeholder="https://your-app.up.railway.app"
-      value="https://web-production-c2b9f.up.railway.app"
-      style="border-color:rgba(251,146,60,0.3)">
-  </div>
-  <div class="cfg-status chk" id="msh-url-status">Paste your Railway URL above</div>
-
-  <span class="cfg-label" style="margin-top:14px;display:block">Your Meshy API Key <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(stays in your browser, never stored)</span></span>
+  <span class="cfg-label">Your Meshy API Key <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(stays in your browser, never stored)</span></span>
   <div class="cfg-row">
     <input class="key-input" id="msh-key" type="password" placeholder="msy_xxxxxxxxxxxx">
   </div>
-  <div class="cfg-status chk" id="msh-status">Each user enters their own key — credits come from their account</div>
+  <div class="cfg-status chk" id="msh-status">Enter your key — credits come from your own Meshy account</div>
   <div id="balance-wrap" style="display:none">
     <div class="balance-pill">💳 <span id="balance-txt">— credits</span></div>
   </div>
   <div class="cfg-note" style="margin-top:10px">
     🔑 Get a free key (200 credits/month, no credit card): <a href="https://app.meshy.ai" target="_blank">app.meshy.ai → Settings → API</a><br>
-    🌐 One Railway deployment serves everyone — each person uses their own key and credits.<br>
-    🔒 Keys are sent directly to your proxy per request and never logged or stored.
+    🔒 Your key is sent directly to Meshy per request and never logged or stored.
   </div>
 </div>
+
+<input type="hidden" id="msh-url" value="https://web-production-c2b9f.up.railway.app">
 
 <!-- Main layout -->
 <div class="layout">
@@ -560,12 +552,10 @@ async function updateStatus() {
     } else {
       const bal = d.balance;
       setStat('on', d.test_mode ? 'Railway · test mode (0 credits)' : `Railway · ${bal?.balance ?? '?'} credits`);
-      document.getElementById('msh-url-status').className='cfg-status ok';
-      document.getElementById('msh-url-status').textContent = '✓ Railway proxy connected';
       document.getElementById('msh-status').className='cfg-status ok';
       document.getElementById('msh-status').textContent = d.test_mode
-        ? '✓ Test mode — returns sample model, uses 0 credits'
-        : `✓ ${bal?.balance ?? '?'} credits remaining`;
+        ? '✓ Connected — test mode (0 credits)'
+        : `✓ Connected · ${bal?.balance ?? '?'} credits remaining`;
       if (bal?.balance !== undefined) {
         document.getElementById('balance-wrap').style.display='block';
         document.getElementById('balance-txt').textContent = bal.balance + ' credits';
@@ -574,8 +564,8 @@ async function updateStatus() {
   } catch {
     setStat('off', `${engine==='tsr'?'TripoSR':'Railway'} unreachable`);
     if (engine==='msh') {
-      document.getElementById('msh-url-status').className='cfg-status err';
-      document.getElementById('msh-url-status').textContent = '✗ Cannot reach Railway URL — check deployment';
+      document.getElementById('msh-status').className='cfg-status err';
+      document.getElementById('msh-status').textContent = '✗ Cannot reach server — check deployment';
     } else {
       document.getElementById('tsr-status').className='cfg-status err';
       document.getElementById('tsr-status').textContent = '✗ Cannot reach server';
@@ -587,9 +577,6 @@ setInterval(updateStatus, 10000);
 
 // Debounced URL/key checks
 document.getElementById('tsr-url')?.addEventListener('input', () => {
-  clearTimeout(urlTimer); urlTimer = setTimeout(updateStatus, 800);
-});
-document.getElementById('msh-url')?.addEventListener('input', () => {
   clearTimeout(urlTimer); urlTimer = setTimeout(updateStatus, 800);
 });
 document.getElementById('msh-key')?.addEventListener('input', () => {
